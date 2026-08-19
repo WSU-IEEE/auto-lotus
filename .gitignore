@@ -3,3 +3,9 @@
 .vscode/c_cpp_properties.json
 .vscode/launch.json
 .vscode/ipch
+.cache
+compile_commands.json
+
+# on nix, platformio puts all dependecies in a self-contained folder here
+.platformio
+.venv

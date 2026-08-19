@@ -1,0 +1,7 @@
+{
+  "sleep": "./resources/basic_assets/sleep.bmp",
+  "select_amount": "./resources/basic_assets/amount.bmp",
+  "select_ratio": "./resources/basic_assets/amount.bmp",
+  "dispensing": "./resources/basic_assets/amount.bmp",
+  "already_dispensing": "./resources/basic_assets/already.bmp"
+}
