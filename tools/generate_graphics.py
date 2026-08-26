@@ -1,105 +1,197 @@
 import json
 import sys
+from dataclasses import dataclass
+from typing import (
+    Literal,
+    NotRequired,
+    TextIO,
+    TypeAlias,
+    TypedDict,
+    assert_never,
+    cast,
+)
 
 import numpy as np
 from PIL import Image
 
-def write_bytes(image, indent):
-    data = np.frombuffer(image.convert("1").tobytes(), dtype=np.uint8);
-    data = np.unpackbits(data).reshape(-1, 8)[:, ::-1];
-    data = np.packbits(data);
-    length = image.width // 8;
-    for row in range(image.height):
-        start = row * length;
-        end = start + length;
-        row_data = data[start:end];
-        out.write(" " * indent);
-        out.write(", ".join(f"0x{x:02x}" for x in row_data));
-        if row < image.height - 1:
-            out.write(",\n");
+BYTE_DTYPE = np.uint8
+BYTE_SIZE = np.dtype(BYTE_DTYPE).itemsize * 8
+
+class Element(TypedDict):
+    bitmap_mode: NotRequired[int]
+    draw_color: NotRequired[int]
+    x: int
+    y: int
+
+class Asset(Element):
+    type: Literal["asset"]
+    name: str
+    time: NotRequired[int]
+
+class Text(Element):
+    type: Literal["text"]
+    font: NotRequired[int]
+    font_mode: NotRequired[int]
+    text: str
+
+class Rectangle(Element):
+    type: Literal["rectangle"]
+    width: int
+    height: int
+    filled: NotRequired[bool]
+
+ElementType: TypeAlias = Asset | Text | Rectangle
+Elements: TypeAlias = list[ElementType]
+
+class Data(TypedDict):
+    assets: dict[str, list[str]] | dict[str, str]
+    scenes: dict[str, Elements] | list[str]
+
+@dataclass
+class Sprite:
+    width: int
+    height: int
+
+@dataclass
+class AnimatedSprite(Sprite):
+    count: int
+
+@dataclass
+class StaticSprite(Sprite):
+    ...
+
+asset_map: dict[str, Sprite] = {}
+
+def write_bytes(out: TextIO, image: Image.Image, indent: int):
+    pixels = np.asarray(image.convert("1"), dtype=BYTE_DTYPE)
+    _, width = map(int, pixels.shape)
+
+    padded_width = (width + BYTE_SIZE - 1) // BYTE_SIZE * BYTE_SIZE
+
+    if padded_width != width:
+        pixels = np.pad(pixels,((0, 0), (0, padded_width - width)))
+
+    data = np.ravel(np.packbits(pixels, axis=1, bitorder="little"))
+
+    prefix = " " * indent;
+    values = "".join(f"\\{x:03o}" for x in data)
+    _ = out.write(f"{prefix}\"{values}\"")
 
 
-def write_image(name, path):
+def write_static(out: TextIO, name: str, path: str):
     with Image.open(path) as image:
-        out.write(f"constexpr Sprite<{image.width}, {image.height}, 1> {name} PROGMEM = {{\n    {{\n");
-        write_bytes(image, 8);
-        out.write("\n    }\n};\n\n");
+        _ = out.write(f"constexpr Sprite<{image.width}, {image.height}, 1> {name} PROGMEM = {{\n")
+        write_bytes(out, image, 4)
+        _ = out.write("\n};\n\n")
+        asset_map[name] = StaticSprite(image.width, image.height)
 
 
-def write_animation(name, paths):
+def write_animated(out: TextIO, name: str, paths: list[str]):
     images = [Image.open(path) for path in paths];
-    out.write(f"constexpr Sprite<{images[0].width}, {images[0].height}, {len(images)}> {name} PROGMEM = {{\n    {{\n        {{\n");
-    for image in images[:-1]:
-        write_bytes(image, 12);
-        out.write("\n        },\n        {\n");
-    write_bytes(images[-1], 12);
-    out.write("\n        }\n    }\n};\n\n");
+    _ = out.write(f"constexpr Sprite<{images[0].width}, {images[0].height}, {len(images)}> {name} PROGMEM = {{\n")
+
+    for i, image in enumerate(images):
+        write_bytes(out, image, 4);
+        if i + 1 < len(images):
+            _ = out.write(",\n")
+
+    _ = out.write("\n};\n\n")
+
+    asset_map[name] = AnimatedSprite(images[0].width, images[0].height, len(images))
+
     for image in images:
-        image.close();
+        image.close()
 
 
-def write_element(name, data, indent):
-    print(data);
-    out.write(" " * indent);
-    if "text" in data:
-        out.write(f"TextElement({data["font"]}, \"{data["text"]}\", {data["x"]}, {data["y"]})");
-    elif "time" in data:
-        out.write(f"AnimatedElement(Graphics::{name}, {data["x"]}, {data["y"]}, {data["time"]})");
-    else:
-        out.write(f"StaticElement(Graphics::{name}, {data["x"]}, {data["y"]})");
+def cpp_constructor(name: str, *args: object) -> str:
+    return f"{name}({', '.join(map(str, args))})"
 
 
-def write_complex_scene(name, elements):
-    out.write(f"constexpr Scene {name}{{\n");
-    for key in list(elements.keys())[:-1]:
-        write_element(key, elements[key], 4);
-        out.write(",\n");
-    last = list(elements.keys())[-1];
-    write_element(last, elements[last], 4);
-    out.write("\n};\n\n");
+def element_expression(element: ElementType) -> str:
+    x = element["x"]
+    y = element["y"]
+    bitmap_mode = element.get("bitmap_mode", 0)
+    draw_color = element.get("draw_color", 1)
+    match element["type"]:
+        case "asset":
+            name = element["name"]
+            assert name in asset_map, f"asset {name} not defined in asset map!"
+            if isinstance(asset_map[name], AnimatedSprite):
+                return cpp_constructor("Element::AnimatedSprite", f"Graphics::{name}", element.get("time", 300), x, y, bitmap_mode, draw_color)
+            else:
+                return cpp_constructor("Element::StaticSprite", f"Graphics::{name}", x, y, bitmap_mode, draw_color)
+        case "text":
+            return cpp_constructor("Element::Text", element.get("font", "u8g2_font_t0_14_mf"), f"\"{element["text"]}\"", element.get("font_mode", 0), x, y, bitmap_mode, draw_color)
+        case "rectangle":
+            return cpp_constructor("Element::Rectangle", element["width"], element["height"], "true" if element.get("filled", True) else "false", x, y, bitmap_mode, draw_color)
+        case _:
+            assert_never(element["type"])
 
-def write_simple_scene(name):
-    out.write(f"constexpr Scene {name}_scene{{\n");
-    data = {
+
+def write_element(out: TextIO, element: ElementType, indent: int):
+    prefix = " " * indent;
+    expression = element_expression(element)
+    _ = out.write(prefix + expression)
+
+
+def write_complex_scene(out: TextIO, name: str, elements: Elements):
+    _ = out.write(f"constexpr Scene {name} = {{\n")
+    for i, element in enumerate(elements):
+        write_element(out, element, 4);
+        if i + 1 < len(elements):
+            _ = out.write(",\n")
+    _ = out.write("\n};\n\n")
+
+def write_simple_scene(out: TextIO, name: str):
+    _ = out.write(f"constexpr Scene {name}_scene = {{\n");
+
+    element: Asset = {
+        "type": "asset",
+        "name": name,
         "x": 0,
         "y": 0,
     };
-    write_element(name, data, 4);
-    out.write("\n};\n\n");
 
+    write_element(out, element, 4);
+    _ = out.write("\n};\n\n");
 
-out = open(sys.argv[2], "w");
-
-out.write("""
-// GENERATED BY 'to_asset.py' SCRIPT IN '/tools/to_graphics.py'
+def main():
+    with open(sys.argv[2], "w") as out, open(sys.argv[1], "r") as file:
+        _ = out.write("""\
+// GENERATED BY 'generate_graphics.py' SCRIPT IN '/tools/'
 #pragma once
 
 #include "scene.hpp"
 
 namespace Graphics {
 
-""");
+"""
+        );
 
+        data = cast(Data, json.load(file));
+        assets = data["assets"];
+        scenes = data["scenes"];
 
-with open(sys.argv[1], "r") as file:
-    data = json.load(file);
-    assets = data["assets"];
-    scenes = data["scenes"];
-    for key in assets.keys():
-        value = assets[key];
-        if isinstance(value, list):
-            write_animation(key, value);
+        for (name, value) in assets.items():
+            assert name not in asset_map, f"asset {name} already exists!"
+            if isinstance(value, list):
+                write_animated(out, name, value);
+            else:
+                write_static(out, name, value);
+
+        if isinstance(scenes, list):
+            for scene in scenes:
+                write_simple_scene(out, scene);
         else:
-            write_image(key, value);
-    if isinstance(scenes, list):
-        for scene in scenes:
-            write_simple_scene(scene);
-    else:
-        for key in scenes.keys():
-            write_complex_scene(key, scenes[key]);
+            for (name, scene) in scenes.items():
+                write_complex_scene(out, name, scene);
 
+        _ = out.write("""\
+} // end namespace Graphics
+"""
+        );
 
-out.write("} // end namespace Graphics\n");
+        print(f"outputted cpp header from '{sys.argv[1]}' at '{sys.argv[2]}'");
 
-
-out.close();
+if __name__ == "__main__":
+    main()

@@ -6,5 +6,5 @@
     "dispensing": "./resources/basic_assets/amount.bmp",
     "already_dispensing": "./resources/basic_assets/already.bmp"
   },
-  "scenes": [ "home", "select_amount", "select_ratio", "dispensing" ]
+  "scenes": [ "home", "select_amount", "select_ratio", "dispensing", "already_dispensing" ]
 }

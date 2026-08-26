@@ -2,70 +2,110 @@
 
 #include <U8g2lib.h>
 
-#include <variant>
-
 #define BYTE_SIZE 8
 
 template <size_t W, size_t H, size_t N>
 struct Sprite {
     static constexpr u8g2_uint_t width = static_cast<u8g2_uint_t>(W);
     static constexpr u8g2_uint_t height = static_cast<u8g2_uint_t>(H);
+    static constexpr size_t bytes_per_row = (W + BYTE_SIZE - 1) / BYTE_SIZE;
+    static constexpr size_t bytes = bytes_per_row * H;
     static constexpr size_t count = N;
-    static constexpr size_t bytes = W * H / BYTE_SIZE;
-    uint8_t frames[N][bytes];
+    uint8_t frames[N][bytes + 1]; // there's a null terminator when using string literals
 };
 
-struct StaticElement {
+namespace Element {
+
+struct StaticSprite {
 public:
     template <size_t W, size_t H>
-    constexpr StaticElement(const Sprite<W, H, 1>& sprite, u8g2_uint_t x, u8g2_uint_t y) :
-        bitmap(&sprite.frames[0][0]), width(static_cast<u8g2_uint_t>(W)), height(static_cast<u8g2_uint_t>(H)), x(x), y(y) { }
+    constexpr StaticSprite(const Sprite<W, H, 1>& sprite, u8g2_uint_t x, u8g2_uint_t y, uint8_t bitmapMode, uint8_t drawColor) :
+        bitmap(&sprite.frames[0][0]), width(static_cast<u8g2_uint_t>(W)), height(static_cast<u8g2_uint_t>(H)),
+        x(x), y(y), bitmapMode(bitmapMode), drawColor(drawColor) { }
 
     void draw(U8G2& u8g2, unsigned long now) const {
+        u8g2.setBitmapMode(bitmapMode);
+        u8g2.setDrawColor(drawColor);
         u8g2.drawXBMP(x, y, width, height, bitmap);
     }
 private:
     const uint8_t* bitmap;
     u8g2_uint_t width, height;
+    // common
     u8g2_uint_t x, y;
+    uint8_t bitmapMode;
+    uint8_t drawColor;
 };
 
-struct AnimatedElement {
+struct AnimatedSprite {
 public:
     template <size_t W, size_t H, size_t N>
-    constexpr AnimatedElement(const Sprite<W, H, N>& sprite, u8g2_uint_t x, u8g2_uint_t y, unsigned long time) :
-        frames(&sprite.frames[0][0]), width(static_cast<u8g2_uint_t>(W)), height(static_cast<u8g2_uint_t>(H)), x(x), y(y),
-        count(N), bytes(Sprite<W, H, N>::bytes), time(time) { }
+    constexpr AnimatedSprite(const Sprite<W, H, N>& sprite, unsigned long time, u8g2_uint_t x, u8g2_uint_t y, uint8_t bitmapMode, uint8_t drawColor) :
+        frames(&sprite.frames[0][0]), width(static_cast<u8g2_uint_t>(W)), height(static_cast<u8g2_uint_t>(H)), count(N), bytes(Sprite<W, H, N>::bytes), time(time),
+        x(x), y(y), bitmapMode(bitmapMode), drawColor(drawColor) { }
 
     void draw(U8G2& u8g2, unsigned long now) const {
+        u8g2.setBitmapMode(bitmapMode);
+        u8g2.setDrawColor(drawColor);
         size_t frame = (now / time) % count;
         u8g2.drawXBMP(x, y, width, height, frames + (frame * bytes));
     }
 private:
     const uint8_t* frames;
     u8g2_uint_t width, height;
-    u8g2_uint_t x, y;
     size_t count;
     size_t bytes;
     unsigned long time;
+    // common
+    u8g2_uint_t x, y;
+    uint8_t bitmapMode;
+    uint8_t drawColor;
 };
 
-struct TextElement {
+struct Text {
 public:
-    constexpr TextElement(const uint8_t* font, const char* text, u8g2_uint_t x, u8g2_uint_t y) :
-        font(font), text(text), x(x), y(y) { }
+    constexpr Text(const uint8_t* font, const char* text, uint8_t fontMode, u8g2_uint_t x, u8g2_uint_t y, uint8_t bitmapMode, uint8_t drawColor) :
+        font(font), text(text), fontMode(fontMode),
+        x(x), y(y), bitmapMode(bitmapMode), drawColor(drawColor) { }
 
     void draw(U8G2& u8g2, unsigned long now) const {
+        u8g2.setBitmapMode(bitmapMode);
+        u8g2.setDrawColor(drawColor);
+        u8g2.setFontMode(fontMode);
         u8g2.setFont(font);
         u8g2.drawStr(x, y, text);
     }
 private:
     const uint8_t* font;
     const char* text;
+    uint8_t fontMode;
+    // common
     u8g2_uint_t x, y;
+    uint8_t bitmapMode;
+    uint8_t drawColor;
 };
 
-using Element = std::variant<StaticElement, AnimatedElement, TextElement>; // could waste a huge amount of memory if you have large animated bitmaps
+struct Rectangle {
+public:
+    constexpr Rectangle(u8g2_uint_t width, u8g2_uint_t height, bool filled, u8g2_uint_t x, u8g2_uint_t y, uint8_t bitmapMode, uint8_t drawColor) :
+        width(width), height(height), filled(filled),
+        x(x), y(y), bitmapMode(bitmapMode), drawColor(drawColor) { }
+
+    void draw(U8G2& u8g2, unsigned long now) const {
+        u8g2.setBitmapMode(bitmapMode);
+        u8g2.setDrawColor(drawColor);
+        filled ? u8g2.drawBox(x, y, width, height) : u8g2.drawFrame(x, y, width, height);
+    }
+private:
+    u8g2_uint_t width, height;
+    bool filled;
+    // common
+    u8g2_uint_t x, y;
+    uint8_t bitmapMode;
+    uint8_t drawColor;
+};
+
+} // namespace Element
 
 template <typename... E>
 struct Scene {

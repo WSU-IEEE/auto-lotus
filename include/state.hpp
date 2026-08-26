@@ -82,10 +82,7 @@ public:
 
         schedule(machine);
         machine.display.clearBuffer();
-        Graphics::home.draw(machine.display, millis());
-        //machine.display.drawXBMP(80, 16, Graphics::bubble_cup.width, Graphics::bubble_cup.height, Graphics::bubble_cup.frames[0]);
-        //machine.display.drawXBMP(22, 22, Graphics::title.width, Graphics::title.height, Graphics::title.bitmap);
-        //machine.display.drawXBMP(0, 0, Graphics::home.width, Graphics::home.height, Graphics::home.bitmap);
+        Graphics::home_scene.draw(machine.display, millis());
         machine.display.sendBuffer();
     }
 
@@ -102,10 +99,7 @@ public:
 
     void onUpdate(StateMachine& machine) override {
         machine.display.clearBuffer();
-        Graphics::home.draw(machine.display, millis());
-        //machine.display.drawXBMP(80, 16, Graphics::bubble_cup.width, Graphics::bubble_cup.height, Graphics::bubble_cup.frames[0]);
-        //machine.display.drawXBMP(22, 22, Graphics::title.width, Graphics::title.height, Graphics::title.bitmap);
-        //machine.display.drawXBMP(0, 0, Graphics::home.width, Graphics::home.height, Graphics::home.bitmap);
+        Graphics::home_scene.draw(machine.display, millis());
         machine.display.sendBuffer();
     }
 private:
@@ -128,7 +122,7 @@ public:
         machine.scheduler.schedule(timeout, [this, &machine](){ this->onTimeout(machine); });
 
         machine.display.clearBuffer();
-        //machine.display.drawXBMP(0, 0, Graphics::select_amount.width, Graphics::select_amount.height, Graphics::select_amount.bitmap);
+        //Graphics::select_amount_scene.draw(machine.display, millis());
         machine.display.sendBuffer();
     }
 
@@ -152,7 +146,7 @@ public:
         machine.scheduler.schedule(timeout, [this, &machine](){ this->onTimeout(machine); });
 
         machine.display.clearBuffer();
-        //machine.display.drawXBMP(0, 0, Graphics::select_ratio.width, Graphics::select_ratio.height, Graphics::select_ratio.bitmap);
+        //Graphics::select_ratio_scene.draw(machine.display, millis());
         machine.display.sendBuffer();
     }
 
@@ -190,7 +184,7 @@ public:
         machine.scheduler.schedule(lotus_time, [this, &machine](){ this->onDispensed<2, 2>(machine); });
 
         machine.display.clearBuffer();
-        //machine.display.drawXBMP(0, 0, Graphics::dispensing.width, Graphics::dispensing.height, Graphics::dispensing.bitmap);
+        //Graphics::dispensing_scene.draw(machine.display, millis());
         machine.display.sendBuffer();
     }
 
@@ -200,7 +194,7 @@ public:
 
     void onInput(StateMachine& machine, unsigned int input) override {
         machine.display.clearBuffer();
-        //machine.display.drawXBMP(0, 0, Graphics::already_dispensing.width, Graphics::already_dispensing.height, Graphics::already_dispensing.bitmap);
+        //Graphics::already_dispensing_scene.draw(machine.display, millis());
         machine.display.sendBuffer();
     }
 private:

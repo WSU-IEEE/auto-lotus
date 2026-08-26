@@ -25,33 +25,25 @@
                 concatMajorMinor = v: lib.pipe v [ lib.versions.splitVersion (lib.sublist 0 2) lib.concatStrings ];
                 python = pkgs."python${concatMajorMinor version}";
                 platformio = pkgs.buildFHSEnv {
-                    name = "platformio-env";
+                    name = "pio";
                     targetPkgs = pkgs: with pkgs; [
                         platformio-core
+                        bash
                     ];
+                    runScript = "${pkgs.platformio-core}/bin/pio";
                 };
             in {
                 default = pkgs.mkShell {
                     venvDir = ".venv";
                     shellHook = ''
                         export PLATFORMIO_CORE_DIR="$PWD/.platformio"
-                    '';
-                    postShellHook = ''
-                        venvVersionWarn() {
-                      	    local venvVersion
-                      	    venvVersion="$("$venvDir/bin/python" -c 'import platform; print(platform.python_version())')"
+                        export PYTHONPATH="$PWD:$PYTHONPATH"
 
-                      	    [[ "$venvVersion" == "${python.version}" ]] && return
+                        alias up="$PWD/tools/upload.sh advanced"
 
-                      	    echo "Warning: Python version mismatch: [$venvVersion (venv)] != [${python.version}]"
-                            echo  "        Delete '$venvDir' and reload to rebuild for version ${python.version}"
+                        upload() {
+                            $PWD/tools/upload.sh $1
                         }
-                        venvVersionWarn
-
-                        if [[ -z "$IN_PIO_FHS" && -z "$SKIP_PIO_FHS" ]]; then
-                            export IN_PIO_FHS=1
-                            exec ${platformio}/bin/platformio-env
-                        fi
                     '';
                     packages = (with pkgs; [
                         platformio
