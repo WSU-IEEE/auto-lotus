@@ -2,11 +2,11 @@
 
 #include <Arduino.h>
 
-#define OZ_TO_ML 29.57353
+#define OZ_TO_ML 29.57353f
 #define MOTOR_PINS 4
 
 // flow rate in ml/min
-#define FLOW_RATE 60.0
+#define FLOW_RATE 90.0f
 
 // button pins
 constexpr uint8_t pins_btn[3] = {
@@ -23,13 +23,14 @@ constexpr uint8_t pins_motor[MOTOR_PINS] = {
     12  // IN4
 };
 
-template <size_t N, uint8_t Mode>
-void setModes(const uint8_t (&pins)[N]) {
+template <uint8_t Mode, size_t N>
+static void setModes(const uint8_t (&pins)[N]) {
     for (size_t i = 0; i < N; i++) pinMode(pins[i], Mode);
 }
 
-void setMotors(const uint8_t (&state)[MOTOR_PINS]) {
-    for (size_t i = 0; i < MOTOR_PINS; i++) digitalWrite(pins_motor[i], state[i]);
+template <size_t Start, size_t Count>
+static void setMotors(const uint8_t (&state)[Count]) {
+    for (size_t i = Start; i < Count + Start; i++) digitalWrite(pins_motor[i], state[i]);
 }
 
 // I2C pins for ESP32
@@ -40,7 +41,7 @@ constexpr int pin_I2C_scl = 22;
 constexpr unsigned long debounce_delay = 200;
 
 constexpr unsigned long timeout = 20000; // time (ms) until giving up and returning to sleep
-constexpr unsigned long sleep_timeout = 20000; // time (ms) until turning off screen to save power
+constexpr unsigned long sleep_timeout = 80000; // time (ms) until turning off screen to save power
 
 // amount (ml) to dispense, maps selection index to oz
 constexpr double dispense_amount[3] = {
@@ -59,11 +60,4 @@ constexpr double soda_ratio[3] = {
 
 // https://www.directindustry.com/prod/kamoer-fluid-tech-shanghai-co-ltd/product-242598-2511427.html
 // in ml/ms, will probably need to be tuned
-constexpr double flow_rate = FLOW_RATE * 60 * 1000;
-
-enum class State {
-    Sleep,
-    SelectAmount,
-    SelectRatio,
-    Dispensing
-};
+constexpr double flow_rate = FLOW_RATE / (60 * 1000);

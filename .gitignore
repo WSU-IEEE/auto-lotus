@@ -5,6 +5,7 @@
 .vscode/ipch
 .cache
 compile_commands.json
+.zed
 
 # on nix, platformio puts all dependecies in a self-contained folder here
 .platformio

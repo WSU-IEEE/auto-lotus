@@ -24,6 +24,12 @@
             let
                 concatMajorMinor = v: lib.pipe v [ lib.versions.splitVersion (lib.sublist 0 2) lib.concatStrings ];
                 python = pkgs."python${concatMajorMinor version}";
+                platformio = pkgs.buildFHSEnv {
+                    name = "platformio-env";
+                    targetPkgs = pkgs: with pkgs; [
+                        platformio-core
+                    ];
+                };
             in {
                 default = pkgs.mkShell {
                     venvDir = ".venv";
@@ -41,26 +47,24 @@
                             echo  "        Delete '$venvDir' and reload to rebuild for version ${python.version}"
                         }
                         venvVersionWarn
+
+                        if [[ -z "$IN_PIO_FHS" && -z "$SKIP_PIO_FHS" ]]; then
+                            export IN_PIO_FHS=1
+                            exec ${platformio}/bin/platformio-env
+                        fi
                     '';
-                    packages = with pkgs; [
-                        platformio-core
+                    packages = (with pkgs; [
+                        platformio
                         clang-tools
                         cmake
-                        codespell
-                        conan
                         cppcheck
-                        doxygen
-                        gtest
-                        lcov
-                        vcpkg
-                        vcpkg-tool
-                        (with python.pkgs; [
-                          venvShellHook
-                          pip
-                          pillow
-                          numpy
-                        ])
-                    ];
+                        libresprite
+                    ]) ++ (with python.pkgs; [
+                        venvShellHook
+                        pip
+                        pillow
+                        numpy
+                    ]);
                 };
             }
         );
