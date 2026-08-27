@@ -1,7 +1,7 @@
 #include <Wire.h>
 
-#include "auto.hpp"
-#include "state.hpp"
+#include "util.hpp"
+#include "lotus.hpp"
 #include "input.hpp"
 
 // #define SIMULATE_INPUT
@@ -16,36 +16,39 @@
 */
 U8G2_SH1106_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0, U8X8_PIN_NONE);
 
-StateMachine machine(u8g2);
+Machine machine(u8g2);
 
 #ifdef SIMULATE_INPUT
-constexpr SimulatedSource::InputEvent simulated_buttons[3] = {
+constexpr SimulatedSource::InputEvent simulated_buttons[] = {
+    {5000, 0},
     {10000, 0},
     {15000, 0},
-    {20000, 0}
+    //{16000, 0}
 };
 
 SimulatedSource input(simulated_buttons);
 #else
-ButtonSource input(pins_btn);
+ButtonSource input(constants::pins_btn);
 #endif
 
 void setup() {
-    Serial.begin(115200); // Baud rate
-    Wire.begin(pin_I2C_sda, pin_I2C_scl);
+    Serial.begin(115200); // baud rate
+    Wire.begin(constants::pin_I2C_sda, constants::pin_I2C_scl);
     u8g2.begin();
     u8g2.setFontPosTop();
     u8g2.setFontMode(1);
 
-    // Buttons with pull-down resistors makes sure they read LOW when not pressed and HIGH when pressed
+    // buttons with pull-down resistors makes sure they read LOW when not pressed and HIGH when pressed
     input.setup();
-    // Outputs to control the L298N motor driver (assuming IN1, IN2 for motor 1 and IN3, IN4 for motor 2)
-    setModes<OUTPUT>(pins_motor);
+    // outputs to control the L298N motor driver (assuming IN1, IN2 for motor 1 and IN3, IN4 for motor 2)
+    setModes<OUTPUT>(constants::pins_motor);
 
     machine.add<Home>();
     machine.add<SelectAmount>();
     machine.add<SelectRatio>();
     machine.add<Dispensing>();
+    machine.add<Leaving>();
+    machine.add<Fault>();
     machine.transition(State::Home);
 
     Serial.println("setup complete!");

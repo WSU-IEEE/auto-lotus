@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
-for i in {0..7}
+file="ratio"
+for i in {0..2}
 do
-    python ./tools/to_txt.py ./resources/assets/waves_$i.bmp ./resources/assets/waves_$i.txt
-    rm ./resources/assets/waves_$i.bmp
-    python ./tools/to_bmp.py ./resources/assets/waves_$i.txt ./resources/assets/waves_$i.bmp
-    rm ./resources/assets/waves_$i.txt
+    python ./tools/to_txt.py ./resources/assets/${file}_${i}.bmp ./resources/assets/${file}_${i}.txt
+    rm ./resources/assets/${file}_${i}.bmp
+    python ./tools/to_bmp.py ./resources/assets/${file}_${i}.txt ./resources/assets/${file}_${i}.bmp
+    rm ./resources/assets/${file}_${i}.txt
 done

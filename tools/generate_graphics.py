@@ -18,7 +18,6 @@ BYTE_DTYPE = np.uint8
 BYTE_SIZE = np.dtype(BYTE_DTYPE).itemsize * 8
 
 class Element(TypedDict):
-    bitmap_mode: NotRequired[int]
     draw_color: NotRequired[int]
     x: int
     y: int
@@ -27,6 +26,8 @@ class Asset(Element):
     type: Literal["asset"]
     name: str
     time: NotRequired[int]
+    offset: NotRequired[int]
+    bitmap_mode: NotRequired[int]
 
 class Text(Element):
     type: Literal["text"]
@@ -40,7 +41,11 @@ class Rectangle(Element):
     height: int
     filled: NotRequired[bool]
 
-ElementType: TypeAlias = Asset | Text | Rectangle
+class Custom(TypedDict):
+    type: Literal["custom"]
+    name: str
+
+ElementType: TypeAlias = Asset | Text | Rectangle | Custom
 Elements: TypeAlias = list[ElementType]
 
 class Data(TypedDict):
@@ -108,22 +113,25 @@ def cpp_constructor(name: str, *args: object) -> str:
 
 
 def element_expression(element: ElementType) -> str:
+    if element["type"] == "custom":
+        return element["name"];
+
     x = element["x"]
     y = element["y"]
-    bitmap_mode = element.get("bitmap_mode", 0)
-    draw_color = element.get("draw_color", 1)
+    draw_color: int = element.get("draw_color", 1)
     match element["type"]:
         case "asset":
             name = element["name"]
             assert name in asset_map, f"asset {name} not defined in asset map!"
+            bitmap_mode: int = element.get("bitmap_mode", 0)
             if isinstance(asset_map[name], AnimatedSprite):
-                return cpp_constructor("Element::AnimatedSprite", f"Graphics::{name}", element.get("time", 300), x, y, bitmap_mode, draw_color)
+                return cpp_constructor("element::AnimatedSprite", f"graphics::{name}", bitmap_mode, element.get("time", 300), element.get("offset", 0), x, y, draw_color)
             else:
-                return cpp_constructor("Element::StaticSprite", f"Graphics::{name}", x, y, bitmap_mode, draw_color)
+                return cpp_constructor("element::StaticSprite", f"graphics::{name}", bitmap_mode, x, y, draw_color)
         case "text":
-            return cpp_constructor("Element::Text", element.get("font", "u8g2_font_t0_14_mf"), f"\"{element["text"]}\"", element.get("font_mode", 0), x, y, bitmap_mode, draw_color)
+            return cpp_constructor("element::Text", element.get("font", "u8g2_font_t0_14_mf"), f"\"{element["text"]}\"", element.get("font_mode", 0), x, y, draw_color)
         case "rectangle":
-            return cpp_constructor("Element::Rectangle", element["width"], element["height"], "true" if element.get("filled", True) else "false", x, y, bitmap_mode, draw_color)
+            return cpp_constructor("element::Rectangle", element["width"], element["height"], "true" if element.get("filled", True) else "false", x, y, draw_color)
         case _:
             assert_never(element["type"])
 
@@ -135,7 +143,7 @@ def write_element(out: TextIO, element: ElementType, indent: int):
 
 
 def write_complex_scene(out: TextIO, name: str, elements: Elements):
-    _ = out.write(f"constexpr Scene {name} = {{\n")
+    _ = out.write(f"inline Scene {name} = {{\n")
     for i, element in enumerate(elements):
         write_element(out, element, 4);
         if i + 1 < len(elements):
@@ -162,8 +170,9 @@ def main():
 #pragma once
 
 #include "scene.hpp"
+#include "custom.hpp"
 
-namespace Graphics {
+namespace graphics {
 
 """
         );
@@ -187,7 +196,7 @@ namespace Graphics {
                 write_complex_scene(out, name, scene);
 
         _ = out.write("""\
-} // end namespace Graphics
+} // namespace graphics
 """
         );
 

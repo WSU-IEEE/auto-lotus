@@ -1,6 +1,6 @@
 #pragma once
 
-#include "auto.hpp"
+#include "util.hpp"
 #include "scheduler.hpp"
 
 class InputSource {
@@ -20,14 +20,14 @@ public:
 
     int poll() override {
         int read[N];
-        for (size_t i = 0; i < N; ++i) read[i] = digitalRead(pins_btn[i]);
+        for (size_t i = 0; i < N; ++i) read[i] = digitalRead(constants::pins_btn[i]);
 
         const auto now = millis();
         int pressed = -1;
 
         for (size_t i = 0; i < N; i++) {
             if (read[i] != last[i]) debounce[i] = now, last[i] = read[i];
-            if ((now - debounce[i]) >= debounce_delay) {
+            if ((now - debounce[i]) >= constants::debounce_delay) {
                 if (read[i] && !stable[i]) stable[i] = true, pressed = i;
                 else if (!read[i] && stable[i]) stable[i] = false;
             }

@@ -1,0 +1,241 @@
+{
+  "assets": {
+    "waves": [
+      "./resources/assets/waves_0.bmp",
+      "./resources/assets/waves_1.bmp",
+      "./resources/assets/waves_2.bmp",
+      "./resources/assets/waves_3.bmp",
+      "./resources/assets/waves_4.bmp",
+      "./resources/assets/waves_5.bmp",
+      "./resources/assets/waves_6.bmp",
+      "./resources/assets/waves_7.bmp"
+    ],
+    "large_bubbles": [
+      "./resources/assets/large_bubbles_0.bmp",
+      "./resources/assets/large_bubbles_1.bmp",
+      "./resources/assets/large_bubbles_2.bmp",
+      "./resources/assets/large_bubbles_3.bmp",
+      "./resources/assets/large_bubbles_4.bmp",
+      "./resources/assets/large_bubbles_5.bmp",
+      "./resources/assets/large_bubbles_6.bmp",
+      "./resources/assets/large_bubbles_7.bmp",
+      "./resources/assets/large_bubbles_8.bmp",
+      "./resources/assets/large_bubbles_9.bmp",
+      "./resources/assets/large_bubbles_10.bmp"
+    ],
+    "ieee_logo": "./resources/assets/ieee_logo.bmp",
+    "cup_size_0": "./resources/assets/cup_size_0.bmp",
+    "cup_size_1": "./resources/assets/cup_size_1.bmp",
+    "cup_size_2": "./resources/assets/cup_size_2.bmp",
+    "ratio_0": "./resources/assets/ratio_0.bmp",
+    "ratio_1": "./resources/assets/ratio_1.bmp",
+    "ratio_2": "./resources/assets/ratio_2.bmp"
+  },
+  "scenes": {
+    "home_scene": [
+      {
+        "type": "rectangle",
+        "x": 0,
+        "y": 41,
+        "width": 128,
+        "height": 27,
+        "filled": true
+      },
+      {
+        "type": "asset",
+        "name": "waves",
+        "x": 0,
+        "y": 32,
+        "time": 600
+      },
+      {
+        "type": "asset",
+        "name": "large_bubbles",
+        "x": 0,
+        "y": 30,
+        "draw_color": 2,
+        "bitmap_mode": 1
+      },
+      {
+        "type": "asset",
+        "name": "large_bubbles",
+        "x": 96,
+        "y": 25,
+        "draw_color": 2,
+        "bitmap_mode": 1,
+        "time": 350,
+        "offset": 700
+      },
+      {
+        "type": "text",
+        "font": "u8g2_font_helvB12_tf",
+        "text": "AUTO-LOTUS",
+        "x": 10,
+        "y": 24,
+        "draw_color": 2,
+        "font_mode": 1
+      },
+      {
+        "type": "text",
+        "font": "u8g2_font_p01type_tf",
+        "text": "PRESS ANY BUTTON",
+        "x": 26,
+        "y": 50,
+        "draw_color": 2,
+        "font_mode": 1
+      },
+      {
+        "type": "asset",
+        "name": "ieee_logo",
+        "x": 0,
+        "y": 0
+      },
+      {
+        "type": "text",
+        "font": "u8g2_font_t0_11b_tr",
+        "text": "WSU IEEE",
+        "x": 16,
+        "y": 2
+      }
+    ],
+    "select_amount_scene": [
+      {
+        "type": "text",
+        "font": "u8g2_font_t0_13_tf",
+        "text": "SELECT SIZE",
+        "x": 4,
+        "y": 18
+      },
+      {
+        "type": "asset",
+        "name": "cup_size_0",
+        "x": 6,
+        "y": 46
+      },
+      {
+        "type": "asset",
+        "name": "cup_size_1",
+        "x": 54,
+        "y": 40
+      },
+      {
+        "type": "asset",
+        "name": "cup_size_2",
+        "x": 102,
+        "y": 28
+      },
+      {
+        "type": "asset",
+        "name": "ieee_logo",
+        "x": 0,
+        "y": 0
+      },
+      {
+        "type": "text",
+        "font": "u8g2_font_t0_11b_tr",
+        "text": "WSU IEEE",
+        "x": 16,
+        "y": 2
+      }
+    ],
+    "select_ratio_scene": [
+      {
+        "type": "text",
+        "font": "u8g2_font_t0_13_tf",
+        "text": "SELECT RATIO",
+        "x": 4,
+        "y": 18
+      },
+      {
+        "type": "asset",
+        "name": "ratio_0",
+        "x": 12,
+        "y": 38
+      },
+      {
+        "type": "asset",
+        "name": "ratio_1",
+        "x": 58,
+        "y": 42
+      },
+      {
+        "type": "asset",
+        "name": "ratio_2",
+        "x": 104,
+        "y": 46
+      },
+      {
+        "type": "asset",
+        "name": "ieee_logo",
+        "x": 0,
+        "y": 0
+      },
+      {
+        "type": "text",
+        "font": "u8g2_font_t0_11b_tr",
+        "text": "WSU IEEE",
+        "x": 16,
+        "y": 2
+      }
+    ],
+    "dispensing_scene": [
+      {
+        "type": "custom",
+        "name": "DISPENSE"
+      },
+      {
+        "type": "rectangle",
+        "x": 22,
+        "y": 48,
+        "width": 84,
+        "height": 14,
+        "filled": false
+      },
+      {
+        "type": "text",
+        "font": "u8g2_font_t0_13_tf",
+        "text": "DISPENSING",
+        "x": 4,
+        "y": 18
+      },
+      {
+        "type": "asset",
+        "name": "ieee_logo",
+        "x": 0,
+        "y": 0
+      },
+      {
+        "type": "text",
+        "font": "u8g2_font_t0_11b_tr",
+        "text": "WSU IEEE",
+        "x": 16,
+        "y": 2
+      }
+    ],
+    "thank_you_scene": [
+      {
+        "type": "text",
+        "font": "u8g2_font_helvB12_tf",
+        "text": "AUTO-LOTUS",
+        "x": 10,
+        "y": 24
+      },
+      {
+        "type": "text",
+        "font": "u8g2_font_lubBI08_tf",
+        "text": "Thank You!",
+        "x": 26,
+        "y": 50
+      }
+    ],
+    "fault_scene": [
+      {
+        "type": "text",
+        "font": "u8g2_font_helvB12_tf",
+        "text": "CANCELLED",
+        "x": 14,
+        "y": 24
+      }
+    ]
+  }
+}

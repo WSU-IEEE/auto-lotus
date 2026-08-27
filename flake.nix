@@ -39,7 +39,7 @@
                         export PLATFORMIO_CORE_DIR="$PWD/.platformio"
                         export PYTHONPATH="$PWD:$PYTHONPATH"
 
-                        alias up="$PWD/tools/upload.sh advanced"
+                        alias up="$PWD/tools/upload.sh complex"
 
                         upload() {
                             $PWD/tools/upload.sh $1
