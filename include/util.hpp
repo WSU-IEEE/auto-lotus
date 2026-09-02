@@ -10,7 +10,7 @@
 
 // debug
 
-// #define DEBUG_DISPENSE_TIME 10000LU
+// #define DEBUG_DISPENSE_TIME 5000LU
 
 // end debug
 
@@ -18,7 +18,7 @@
 #define MOTOR_PINS 4
 
 // flow rate in ml/min
-#define FLOW_RATE 90.0F
+#define FLOW_RATE 408.0F
 
 namespace constants {
 
@@ -42,7 +42,7 @@ constexpr int pin_I2C_sda = 21;
 constexpr int pin_I2C_scl = 22;
 
 // button debounce time
-constexpr unsigned long debounce_delay = 200;
+constexpr unsigned long debounce_delay = 20;
 
 constexpr unsigned long timeout = 20000; // time (ms) until giving up and returning to sleep
 constexpr unsigned long sleep_timeout = 80000; // time (ms) until turning off screen to save power
@@ -50,9 +50,9 @@ constexpr unsigned long leaving_timeout = 5000; // time (ms) "thank you" scene i
 
 // amount (ml) to dispense, maps selection index to oz
 constexpr double dispense_amount[3] = {
+    4.0 * OZ_TO_ML,
     8.0 * OZ_TO_ML,
-    16.0 * OZ_TO_ML,
-    32.0 * OZ_TO_ML
+    16.0 * OZ_TO_ML
 };
 
 // ratio of soda in mixed drink, maps selection index

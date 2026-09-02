@@ -1,13 +1,13 @@
 # Auto-Lotus
 
-Embedded code for the WSU IEEE Auto-Lotus project: a dispenser that mixes a Lotus Energy drink for you! Built for an ESP32S with an SH1106 128x64 monochrome, OLED display, and with two peristaltic pump. Utilizes the [U8glib library](https://github.com/olikraus/u8g2/).
+Embedded code for the WSU IEEE Auto-Lotus project: a dispenser that mixes a Lotus Energy drink for you! Built for an ESP32S with an SH1106 128x64 monochrome, OLED display, and with two peristaltic pumps. Utilizes the [U8glib library](https://github.com/olikraus/u8g2/).
 
 ### Components
 
 - NODEMCU ESP-32S Microcontroller
-- Kamoer NKP-DCL-S10D Perisaltic Pump
-- XXX Motor Controller
-- XXX SH1106 Monochrome OLED Display
+- Kamoer KPHM400-SW3B25 Perisaltic Pump
+- L298N Motor Driver
+- 1.3" SH1106 I2C Monochrome OLED Display
 
 ### Flags and Debug
 
@@ -80,7 +80,7 @@ There are 3 basic element Types (`asset`, `text`, and `rectangle`) and the `cust
   }
 ]
 ```
-This example exposes all options for each type, explanations of what the colo/mode options can be found on the [U8G2 Reference](https://github.com/olikraus/u8g2/wiki/u8g2reference#setfontmode).
+This example exposes all options for each type, explanations of what the color/mode options can be found on the [U8G2 Reference](https://github.com/olikraus/u8g2/wiki/u8g2reference#setfontmode).
 
 Custom elements do not expose options outside of C++, the name corresponds to the `#define` of a constructor in the `/include/custom.hpp` header.
 

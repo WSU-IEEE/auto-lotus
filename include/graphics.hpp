@@ -73,8 +73,11 @@ inline Scene home_scene = {
 inline Scene select_amount_scene = {
     element::Text(u8g2_font_t0_13_tf, "SELECT SIZE", 0, 4, 18, 1),
     element::StaticSprite(graphics::cup_size_0, 0, 6, 46, 1),
+    element::Text(u8g2_font_6x12_tn, "4", 1, 16, 45, 2),
     element::StaticSprite(graphics::cup_size_1, 0, 54, 40, 1),
-    element::StaticSprite(graphics::cup_size_2, 0, 102, 28, 1),
+    element::Text(u8g2_font_6x12_tn, "8", 1, 61, 42, 2),
+    element::StaticSprite(graphics::cup_size_2, 0, 103, 28, 1),
+    element::Text(u8g2_font_6x12_tn, "16", 1, 107, 34, 2),
     element::StaticSprite(graphics::ieee_logo, 0, 0, 0, 1),
     element::Text(u8g2_font_t0_11b_tr, "WSU IEEE", 0, 16, 2, 1)
 };
@@ -98,7 +101,7 @@ inline Scene dispensing_scene = {
 
 inline Scene thank_you_scene = {
     element::Text(u8g2_font_helvB12_tf, "AUTO-LOTUS", 0, 10, 24, 1),
-    element::Text(u8g2_font_lubBI08_tf, "Thank You!", 0, 26, 50, 1)
+    element::Text(u8g2_font_lubBI08_tf, "Thank You!", 0, 30, 50, 1)
 };
 
 inline Scene fault_scene = {

@@ -110,8 +110,8 @@ class Dispensing : public StateHandler<State, State::Dispensing> { // TODO add a
 public:
     void onEnter(Machine& machine) override {
         dispensed = false;
-
-        setMotors<0, 4>({LOW, HIGH, LOW, HIGH});
+        // OUT3 and OUT4 on L298N are attached to motor 2 the wrong way around, therefore the LOW, HIGH is reversed to counter
+        setMotors<0, 4>({LOW, HIGH, HIGH, LOW});
 
 #ifdef DEBUG_DISPENSE_TIME
         const unsigned long total_time = DEBUG_DISPENSE_TIME;

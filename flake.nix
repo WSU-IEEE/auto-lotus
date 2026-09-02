@@ -1,9 +1,7 @@
 # based on https://github.com/the-nix-way/dev-templates/blob/main/typst/flake.nix
 {
     description = "esp32 c++ and python development environment";
-
-    inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-
+    inputs.nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
     outputs = { self, ... } @ inputs:
     let
         inherit (inputs.nixpkgs) lib;
@@ -32,23 +30,29 @@
                     ];
                     runScript = "${pkgs.platformio-core}/bin/pio";
                 };
+                # run clangd in a FHS compliant environment so you can properly execute clangd using toolchain-xtensa-esp32
+                clangd = pkgs.buildFHSEnv {
+                  name = "clangd";
+                  targetPkgs = pkgs: with pkgs; [ clang-tools ];
+                  runScript = "clangd";
+                };
             in {
                 default = pkgs.mkShell {
                     venvDir = ".venv";
                     shellHook = ''
+                        ln -sf ${clangd}/bin/clangd $PWD/.dev-clangd
                         export PLATFORMIO_CORE_DIR="$PWD/.platformio"
                         export PYTHONPATH="$PWD:$PYTHONPATH"
-
                         alias up="$PWD/tools/upload.sh complex"
-
                         upload() {
                             $PWD/tools/upload.sh $1
                         }
                     '';
                     packages = (with pkgs; [
                         platformio
-                        clang-tools
+                        clangd
                         cmake
+                        codespell
                         cppcheck
                         libresprite
                     ]) ++ (with python.pkgs; [

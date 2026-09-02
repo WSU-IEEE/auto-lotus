@@ -7,7 +7,8 @@
 compile_commands.json
 .zed
 **/__pycache__
-# on nix, platformio puts all dependecies in a self-contained folder here
+# nix flake
 .platformio
 .venv
 .direnv
+.dev-clangd

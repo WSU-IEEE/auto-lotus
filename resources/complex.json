@@ -113,16 +113,43 @@
         "y": 46
       },
       {
+        "type": "text",
+        "font": "u8g2_font_6x12_tn",
+        "text": "4",
+        "x": 16,
+        "y": 45,
+        "draw_color": 2,
+        "font_mode": 1
+      },
+      {
         "type": "asset",
         "name": "cup_size_1",
         "x": 54,
         "y": 40
       },
       {
+        "type": "text",
+        "font": "u8g2_font_6x12_tn",
+        "text": "8",
+        "x": 61,
+        "y": 42,
+        "draw_color": 2,
+        "font_mode": 1
+      },
+      {
         "type": "asset",
         "name": "cup_size_2",
-        "x": 102,
+        "x": 103,
         "y": 28
+      },
+      {
+        "type": "text",
+        "font": "u8g2_font_6x12_tn",
+        "text": "16",
+        "x": 107,
+        "y": 34,
+        "draw_color": 2,
+        "font_mode": 1
       },
       {
         "type": "asset",
@@ -224,7 +251,7 @@
         "type": "text",
         "font": "u8g2_font_lubBI08_tf",
         "text": "Thank You!",
-        "x": 26,
+        "x": 30,
         "y": 50
       }
     ],
