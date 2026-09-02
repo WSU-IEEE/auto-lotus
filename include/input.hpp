@@ -1,49 +1,37 @@
 #pragma once
 
+#include "esp32-hal-gpio.h"
 #include "util.hpp"
 #include "scheduler.hpp"
 
-class InputSource {
-public:
-    virtual void setup() = 0;
-    virtual int poll() = 0;
-};
-
 template <size_t N>
-class ButtonSource : public InputSource {
+class ButtonSource {
 public:
     constexpr ButtonSource(const uint8_t (&pins)[N]) : pins(pins) { }
 
-    void setup() override {
-        setModes<INPUT_PULLDOWN>(pins);
+    void setup() {
+        setModes<INPUT>(pins);
     }
 
-    int poll() override {
+    int poll() {
         int read[N];
-        for (size_t i = 0; i < N; ++i) read[i] = digitalRead(constants::pins_btn[i]);
+        for (size_t i = 0; i < N; ++i)
+            read[i] = digitalRead(pins[i]);
 
-        const auto now = millis();
         int pressed = -1;
 
-        for (size_t i = 0; i < N; i++) {
-            if (read[i] != last[i]) debounce[i] = now, last[i] = read[i];
-            if ((now - debounce[i]) >= constants::debounce_delay) {
-                if (read[i] && !stable[i]) stable[i] = true, pressed = i;
-                else if (!read[i] && stable[i]) stable[i] = false;
-            }
-        }
+        // TODO add raw input option
+        for (size_t i = 0; i < N; i++)
+            if (!read[i])
+                pressed = i;
 
         return pressed;
     }
 private:
-    int last[N] = { 0 }; // raw button state last time they were read
-    unsigned long debounce[N] = { 0 }; // time when button was first pressed
-    bool stable[N] = { false }; // debounced button state
-
     const uint8_t (&pins)[N];
 };
 
-class SimulatedSource : public InputSource {
+class SimulatedSource {
 public:
     struct InputEvent {
         unsigned int time;
@@ -55,9 +43,9 @@ public:
         for (size_t i = 0; i < N; i++) scheduler.schedule(inputs[i].time, [this, inputs, i](){ this->press(inputs[i].button); });
     }
 
-    void setup() override { }
+    void setup() { }
 
-    int poll() override {
+    int poll() {
         scheduler.process();
         auto button = pressed;
         if (pressed != -1) pressed = -1;

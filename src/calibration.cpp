@@ -3,6 +3,7 @@
 
 #include "util.hpp"
 #include "scheduler.hpp"
+#include "input.hpp"
 
 #define RESET_MOTORS setMotors<0, 4>({LOW, LOW, LOW, LOW});
 
@@ -19,6 +20,8 @@ Scheduler scheduler;
 volatile bool start = false;
 volatile bool end = false;
 
+ButtonSource input(constants::pins_btn);
+
 void enableMotor() {
     // OUT3 and OUT4 are swapped on motor driver board so for motor two, REVERSE and FORWARD are flipped, i.e. LOW, HIGH should start REVERSE but instead it does forward, it is inverted here to counter that
     setMotors<0, 4>({LOW, HIGH, HIGH, LOW});
@@ -34,6 +37,7 @@ void setup() {
 
     // outputs to control the L298N motor driver (assuming IN1, IN2 for motor 1 and IN3, IN4 for motor 2)
     setModes<OUTPUT>(constants::pins_motor);
+    input.setup();
 
     scheduler.schedule(MOTOR_START, [](){ enableMotor(); });
     scheduler.schedule(MOTOR_END, [](){ RESET_MOTORS });
@@ -58,6 +62,12 @@ void loop() {
     else u8g2.drawFrame(96, 24, 8, 8);
     if (end) u8g2.drawBox(96, 32, 8, 8);
     else u8g2.drawFrame(96, 32, 8, 8);
+
+    auto pressed = input.poll();
+    for (size_t i = 0; i < 4; ++i) {
+        if (pressed == i) u8g2.drawBox(32 + i * 10, 50, 8, 8);
+        else u8g2.drawFrame(32 + i * 10, 50, 8, 8);
+    }
 
     u8g2.sendBuffer();
 

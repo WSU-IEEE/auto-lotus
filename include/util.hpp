@@ -23,15 +23,16 @@
 namespace constants {
 
 // button pins
-constexpr uint8_t pins_btn[3] = {
-    19, // left
-    18, // middle
-    17  // right
+constexpr uint8_t pins_btn[4] = {
+    32,
+    33,
+    25,
+    26
 };
 
 // motor controller pins
 constexpr uint8_t pins_motor[MOTOR_PINS] = {
-    16, // IN1
+    1, // IN1
     15, // IN2
     14, // IN3
     12  // IN4
