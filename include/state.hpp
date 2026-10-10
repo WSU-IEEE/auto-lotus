@@ -45,15 +45,15 @@ public:
         m_time = millis();
         m_current = state;
         scheduler.reset();
-        m_handlers[static_cast<size_t>(state)]->onEnter(*this);
+        m_handlers[static_cast<size_t>(state)]->on_enter(*this);
     }
 
     void input(unsigned pressed) {
-        m_handlers[static_cast<size_t>(m_current)]->onInput(*this, pressed);
+        m_handlers[static_cast<size_t>(m_current)]->on_input(*this, pressed);
     }
 
     void update() {
-        m_handlers[static_cast<size_t>(m_current)]->onUpdate(*this);
+        m_handlers[static_cast<size_t>(m_current)]->on_update(*this);
         scheduler.process();
     }
 

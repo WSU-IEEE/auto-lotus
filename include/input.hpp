@@ -18,7 +18,7 @@ public:
     { }
 
     void setup() {
-        setModes<INPUT>(m_pins);
+        set_modes<INPUT>(m_pins);
     }
 
     bool poll() {
@@ -32,11 +32,11 @@ public:
             if (!read[i]) { // read at LOW means pressed
                 if(m_pressed[i] == Type::Pressed)
                     m_pressed[i] = Type::Stale;
-                else if (!m_pressed[i]) {
+                else if (!static_cast<uint8_t>(m_pressed[i])) {
                     m_pressed[i] = Type::Pressed;
                     event = true;
                 }
-            } else if (m_pressed[i])
+            } else if (static_cast<uint8_t>(m_pressed[i]))
                 m_pressed[i] = Type::Neutral;
         }
 
