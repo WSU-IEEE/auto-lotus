@@ -5,8 +5,10 @@
 #include <string>
 #include <U8g2lib.h>
 
+template <>
 class Notification {
 public:
+
 };
 
 template <size_t W, size_t H, size_t N>
