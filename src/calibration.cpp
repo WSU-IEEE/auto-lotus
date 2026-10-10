@@ -1,6 +1,7 @@
 // alternative build target to calibrate constants on real hardware
 #include <Wire.h>
 
+#include "esp32-hal-gpio.h"
 #include "util.hpp"
 #include "scheduler.hpp"
 #include "input.hpp"
@@ -63,13 +64,17 @@ void loop() {
     if (end) u8g2.drawBox(96, 32, 8, 8);
     else u8g2.drawFrame(96, 32, 8, 8);
 
-    auto pressed = input.poll();
+    Serial.println(input.poll() ? "BUTTON PRESSED!" : "NOTHING PRESSED.");
+    auto pressed = input.get();
     for (size_t i = 0; i < 4; ++i) {
-        if (pressed == i) u8g2.drawBox(32 + i * 10, 50, 8, 8);
+        Serial.print(pressed[i] == NEUTRAL ? "NEUTRAL" : pressed[i] == PRESSED ? "PRESSED" : "STALE");
+        Serial.printf("(%d), ", digitalRead(constants::pins_btn[i]));
+        if (pressed[i]) u8g2.drawBox(32 + i * 10, 50, 8, 8);
         else u8g2.drawFrame(32 + i * 10, 50, 8, 8);
     }
+    Serial.print("\n");
 
     u8g2.sendBuffer();
 
-    delay(20);
+    delay(500);
 }

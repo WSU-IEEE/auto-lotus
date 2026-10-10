@@ -2,66 +2,65 @@
 
 #include "scheduler.hpp"
 
-template <typename TEnum>
+template <typename E>
 class StateMachine;
 
-template <typename TEnum>
+template <typename E>
 class IStateHandler {
 public:
-    virtual void onEnter(StateMachine<TEnum>& machine) = 0;
-    virtual bool onExit(StateMachine<TEnum>& machine) {
+    virtual void on_enter(StateMachine<E>& machine) = 0;
+    virtual bool on_exit(StateMachine<E>& machine) {
         return true;
     };
-    virtual void onInput(StateMachine<TEnum>& machine, unsigned int input) = 0;
-    virtual void onUpdate(StateMachine<TEnum>& machine) { };
+    virtual void on_input(StateMachine<E>& machine, unsigned int input) = 0;
+    virtual void on_update(StateMachine<E>& machine) { };
 };
 
-template <typename TEnum, TEnum TState>
-class StateHandler : public IStateHandler<TEnum> {
+template <typename E, E State>
+class StateHandler : public IStateHandler<E> {
 public:
-    static constexpr TEnum state = TState;
+    static constexpr E state = State;
 };
 
-template <typename TEnum>
+template <typename E>
 class StateMachine {
 public:
     StateMachine(U8G2& display) : display(display) { };
 
-    template <typename THandler>
-    THandler& getHandler() {
-        static THandler handler;
+    template <typename H>
+    H& get_handler() {
+        static H handler;
         return handler;
     }
 
-    template <typename THandler>
+    template <typename H>
     void add() {
-        constexpr TEnum state = THandler::state;
-        handlers[static_cast<size_t>(state)] = &getHandler<THandler>();
+        constexpr E state = H::state;
+        m_handlers[static_cast<size_t>(state)] = &get_handler<H>();
     }
 
-    void transition(TEnum state) {
-        auto cancelled = !handlers[static_cast<size_t>(current)]->onExit(*this);
+    void transition(E state) {
+        auto cancelled = !m_handlers[static_cast<size_t>(m_current)]->on_exit(*this);
         if (cancelled) return;
-        time = millis();
-        current = state;
+        m_time = millis();
+        m_current = state;
         scheduler.reset();
-        handlers[static_cast<size_t>(state)]->onEnter(*this);
-        Serial.println("transitioned");
+        m_handlers[static_cast<size_t>(state)]->onEnter(*this);
     }
 
     void input(unsigned pressed) {
-        handlers[static_cast<size_t>(current)]->onInput(*this, pressed);
+        m_handlers[static_cast<size_t>(m_current)]->onInput(*this, pressed);
     }
 
     void update() {
-        handlers[static_cast<size_t>(current)]->onUpdate(*this);
+        m_handlers[static_cast<size_t>(m_current)]->onUpdate(*this);
         scheduler.process();
     }
 
     U8G2& display;
     Scheduler scheduler;
 protected:
-    IStateHandler<TEnum>* handlers[static_cast<size_t>(TEnum::Count)]; // you must append the enum Count to the end of the list in order to get the length
-    TEnum current;
-    unsigned long time = 0;
+    IStateHandler<E>* m_handlers[static_cast<size_t>(E::Count)]; // you must append the enum Count to the end of the list in order to get the length
+    E m_current;
+    unsigned long m_time = 0;
 };

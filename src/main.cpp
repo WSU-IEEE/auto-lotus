@@ -28,7 +28,7 @@ constexpr SimulatedSource::InputEvent simulated_buttons[] = {
 
 SimulatedSource input(simulated_buttons);
 #else
-ButtonSource input(constants::pins_btn);
+ButtonInput input(constants::pins_btn);
 #endif
 
 void setup() {
@@ -41,7 +41,7 @@ void setup() {
     // buttons with pull-down resistors makes sure they read LOW when not pressed and HIGH when pressed
     input.setup();
     // outputs to control the L298N motor driver (assuming IN1, IN2 for motor 1 and IN3, IN4 for motor 2)
-    setModes<OUTPUT>(constants::pins_motor);
+    set_modes<OUTPUT>(constants::pins_motor);
 
     machine.add<Home>();
     machine.add<SelectAmount>();
@@ -55,8 +55,8 @@ void setup() {
 }
 
 void loop() {
-    int pressed = input.poll();
-    if (pressed != -1) machine.input(pressed);
+    if (input.poll())
+        machine.input(input.button());
 
     machine.update();
 

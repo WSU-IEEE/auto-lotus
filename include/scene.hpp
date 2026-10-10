@@ -20,7 +20,8 @@ namespace element {
 struct StaticSprite {
 public:
     template <size_t W, size_t H>
-    constexpr StaticSprite(const Sprite<W, H, 1>& sprite, uint8_t bitmapMode, u8g2_uint_t x, u8g2_uint_t y, uint8_t drawColor) :
+    constexpr StaticSprite(
+        const Sprite<W, H, 1>& sprite, uint8_t bitmapMode, u8g2_uint_t x, u8g2_uint_t y, uint8_t drawColor) :
         bitmap(&sprite.frames[0][0]), width(static_cast<u8g2_uint_t>(W)), height(static_cast<u8g2_uint_t>(H)),
         x(x), y(y), bitmapMode(bitmapMode), drawColor(drawColor) { }
 

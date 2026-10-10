@@ -23,7 +23,7 @@
 namespace constants {
 
 // button pins
-constexpr uint8_t pins_btn[4] = {
+constexpr std::array<uint8_t, 4> pins_btn{
     32,
     33,
     25,
@@ -31,11 +31,11 @@ constexpr uint8_t pins_btn[4] = {
 };
 
 // motor controller pins
-constexpr uint8_t pins_motor[MOTOR_PINS] = {
-    1, // IN1
-    15, // IN2
-    14, // IN3
-    12  // IN4
+constexpr std::array<uint8_t, MOTOR_PINS> pins_motor{
+    27, // IN1
+    18, // IN2
+    19, // IN3
+    23  // IN4
 };
 
 // I2C pins for ESP32
@@ -50,7 +50,7 @@ constexpr unsigned long sleep_timeout = 80000; // time (ms) until turning off sc
 constexpr unsigned long leaving_timeout = 5000; // time (ms) "thank you" scene is displayed
 
 // amount (ml) to dispense, maps selection index to oz
-constexpr double dispense_amount[3] = {
+constexpr std::array<double, 3> dispense_amount{
     4.0 * OZ_TO_ML,
     8.0 * OZ_TO_ML,
     16.0 * OZ_TO_ML
@@ -58,7 +58,7 @@ constexpr double dispense_amount[3] = {
 
 // ratio of soda in mixed drink, maps selection index
 // i.e. 0.6 is 6 parts soda to 4 parts lotus
-constexpr double soda_ratio[3] = {
+constexpr std::array<double, 3> soda_ratio{
     0.9,
     0.8,
     0.7
@@ -71,11 +71,11 @@ constexpr double flow_rate = FLOW_RATE / (60 * 1000);
 }; // namespace constants
 
 template <uint8_t M, size_t N>
-static void setModes(const uint8_t (&pins)[N]) {
+static void set_modes(const std::array<uint8_t, N>& pins) {
     for (size_t i = 0; i < N; i++) pinMode(pins[i], M);
 }
 
 template <size_t Start, size_t Count>
-static void setMotors(const uint8_t (&state)[Count]) {
+static void set_motors(const std::array<uint8_t, Count>& state) {
     for (size_t i = Start; i < Count + Start; i++) digitalWrite(constants::pins_motor[i], state[i]);
 }

@@ -17,7 +17,6 @@ struct Dispense {
 
     constexpr Dispense(u8g2_uint_t x, u8g2_uint_t y, u8g2_uint_t fixed, u8g2_uint_t max) : x(x), y(y), fixed(fixed), max(max) { }
 
-
     void draw(U8G2& u8g2, unsigned long now) const {
         double elapsed = now - start;
         auto length  = static_cast<u8g2_uint_t>(elapsed / duration * max);
