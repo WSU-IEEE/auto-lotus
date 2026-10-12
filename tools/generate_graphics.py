@@ -125,9 +125,9 @@ def element_expression(element: ElementType) -> str:
             assert name in asset_map, f"asset {name} not defined in asset map!"
             bitmap_mode: int = element.get("bitmap_mode", 0)
             if isinstance(asset_map[name], AnimatedSprite):
-                return cpp_constructor("element::AnimatedSprite", f"graphics::{name}", bitmap_mode, element.get("time", 300), element.get("offset", 0), x, y, draw_color)
+                return cpp_constructor("element::AnimatedSprite", f"graphics::{name}.view()", bitmap_mode, element.get("time", 300), element.get("offset", 0), x, y, draw_color)
             else:
-                return cpp_constructor("element::StaticSprite", f"graphics::{name}", bitmap_mode, x, y, draw_color)
+                return cpp_constructor("element::StaticSprite", f"graphics::{name}.view()", bitmap_mode, x, y, draw_color)
         case "text":
             return cpp_constructor("element::Text", element.get("font", "u8g2_font_t0_14_mf"), f"\"{element["text"]}\"", element.get("font_mode", 0), x, y, draw_color)
         case "rectangle":
@@ -143,7 +143,7 @@ def write_element(out: TextIO, element: ElementType, indent: int):
 
 
 def write_complex_scene(out: TextIO, name: str, elements: Elements):
-    _ = out.write(f"inline Scene {name} = {{\n")
+    _ = out.write(f"inline Scene {name}{{\n")
     for i, element in enumerate(elements):
         write_element(out, element, 4);
         if i + 1 < len(elements):
@@ -151,7 +151,7 @@ def write_complex_scene(out: TextIO, name: str, elements: Elements):
     _ = out.write("\n};\n\n")
 
 def write_simple_scene(out: TextIO, name: str):
-    _ = out.write(f"constexpr Scene {name}_scene = {{\n");
+    _ = out.write(f"constexpr Scene {name}_scene{{\n");
 
     element: Asset = {
         "type": "asset",

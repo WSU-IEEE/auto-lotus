@@ -23,27 +23,25 @@ using Machine = StateMachine<State>;
 
 class Home : public StateHandler<State, State::Home> {
 public:
-    void on_enter(Machine& machine) override {
+    void on_enter(Machine& machine, unsigned long now) override {
         asleep = false;
 
         schedule(machine);
     }
 
-    void on_input(Machine& machine, unsigned int input) override {
+    void on_input(Machine& machine, unsigned int input, unsigned long now) override {
         if (asleep) {
             asleep = false;
             machine.display.setPowerSave(0);
-            machine.scheduler.reset();
+            machine.scheduler.reset(now);
             schedule(machine);
         } else {
-            machine.transition(State::SelectAmount);
+            machine.transition(State::SelectAmount, now);
         }
     }
 
-    void on_update(Machine& machine) override {
-        machine.display.clearBuffer();
-        graphics::home_scene.draw(machine.display, millis());
-        machine.display.sendBuffer();
+    void on_update(Machine& machine, unsigned long now) override {
+        graphics::home_scene.draw(machine.display, now);
     }
 private:
     volatile bool asleep = false;
@@ -55,60 +53,75 @@ private:
 
     inline void schedule(Machine& machine) {
 #ifndef DISABLE_POWER_SAVING
-        machine.scheduler.schedule(constants::sleep_timeout, [this, &machine](){ this->on_timeout(machine); });
+        machine.scheduler.schedule(
+            constants::sleep_timeout,
+            [this, &machine]() {
+                this->on_timeout(machine);
+            }
+        );
 #endif
     }
 };
 
 class SelectAmount : public StateHandler<State, State::SelectAmount> {
 public:
-    void on_enter(Machine& machine) override {
-        machine.scheduler.schedule(constants::timeout, [this, &machine](){ this->on_timeout(machine); });
-
-        machine.display.clearBuffer();
-        graphics::select_amount_scene.draw(machine.display, millis());
-        machine.display.sendBuffer();
+    double amount = 0.0;
+public:
+    void on_enter(Machine& machine, unsigned long now) override {
+        machine.scheduler.schedule(
+            constants::timeout,
+            [this, &machine, now]() {
+                this->on_timeout(machine, now);
+            }
+        );
     }
 
-    void on_input(Machine& machine, unsigned int input) override {
+    void on_input(Machine& machine, unsigned int input, unsigned long now) override {
         amount = constants::dispense_amount[input];
         Serial.println(amount);
-        machine.transition(State::SelectRatio);
+        machine.transition(State::SelectRatio, now);
     }
 
-    double amount = 0.0;
+    void on_update(Machine& machine, unsigned long now) override {
+        graphics::select_amount_scene.draw(machine.display, now);
+    }
 private:
-    void on_timeout(Machine& machine) {
-        machine.transition(State::Home);
+    void on_timeout(Machine& machine, unsigned long now) {
+        machine.transition(State::Home, now);
     }
 };
 
 class SelectRatio : public StateHandler<State, State::SelectRatio> {
 public:
-    void on_enter(Machine& machine) override {
-        machine.scheduler.schedule(constants::timeout, [this, &machine](){ this->on_timeout(machine); });
-
-        machine.display.clearBuffer();
-        graphics::select_ratio_scene.draw(machine.display, millis());
-        machine.display.sendBuffer();
+    void on_enter(Machine& machine, unsigned long now) override {
+        machine.scheduler.schedule(
+            constants::timeout,
+            [this, &machine, now]() {
+                this->on_timeout(machine, now);
+            }
+        );
     }
 
-    void on_input(Machine& machine, unsigned int input) override {
+    void on_input(Machine& machine, unsigned int input, unsigned long now) override {
         ratio = constants::soda_ratio[input];
         Serial.println(machine.get_handler<SelectAmount>().amount);
-        machine.transition(State::Dispensing);
+        machine.transition(State::Dispensing, now);
+    }
+
+    void on_update(Machine& machine, unsigned long now) override {
+        graphics::select_ratio_scene.draw(machine.display, now);
     }
 
     double ratio = 0.0;
 private:
-    void on_timeout(Machine& machine) {
-        machine.transition(State::Home);
+    void on_timeout(Machine& machine, unsigned long now) {
+        machine.transition(State::Home, now);
     }
 };
 
 class Dispensing : public StateHandler<State, State::Dispensing> { // TODO add a "menu" to confirm halting dispensing
 public:
-    void on_enter(Machine& machine) override {
+    void on_enter(Machine& machine, unsigned long now) override {
         dispensed = false;
         // OUT3 and OUT4 on L298N are attached to motor 2 the wrong way around, therefore the LOW, HIGH is reversed to counter
         set_motors<0, 4>({LOW, HIGH, HIGH, LOW});
@@ -126,10 +139,18 @@ public:
         Serial.println(soda_time);
         Serial.println(lotus_time);
 
-        machine.scheduler.schedule(soda_time, [this, &machine](){ this->on_dispensed<0, 2>(machine); });
-        machine.scheduler.schedule(lotus_time, [this, &machine](){ this->on_dispensed<2, 2>(machine); });
-
-        const auto now = millis();
+        machine.scheduler.schedule(
+            soda_time,
+            [this, &machine, now]() {
+                this->on_dispensed<0, 2>(machine, now);
+            }
+        );
+        machine.scheduler.schedule(
+            lotus_time,
+            [this, &machine, now]() {
+                this->on_dispensed<2, 2>(machine, now);
+            }
+        );
 
         auto& dispense = graphics::dispensing_scene.get<custom::Dispense>();
         dispense.start = now;
@@ -137,63 +158,69 @@ public:
         Serial.printf("duration: %lu", dispense.duration);
     }
 
-    bool on_exit(Machine& machine) override {
+    bool on_exit(Machine& machine, unsigned long) override {
         RESET_MOTORS
         return true;
     }
 
-    void on_input(Machine& machine, unsigned int input) override {
-        machine.transition(State::Fault);
+    void on_input(Machine& machine, unsigned int input, unsigned long now) override {
+        machine.transition(State::Fault, now);
     }
 
-    void on_update(Machine& machine) override {
-        machine.display.clearBuffer();
-        graphics::dispensing_scene.draw(machine.display, millis());
-        machine.display.sendBuffer();
+    void on_update(Machine& machine, unsigned long now) override {
+        graphics::dispensing_scene.draw(machine.display, now);
     }
 private:
     volatile bool dispensed = false; // use atomic?
 
     template <size_t Start, size_t Count>
-    void on_dispensed(Machine& machine) {
+    void on_dispensed(Machine& machine, unsigned long now) {
         set_motors<Start, Count>({LOW, LOW});
-        if (dispensed) machine.transition(State::Leaving);
+        if (dispensed)
+            machine.transition(State::Leaving, now);
         else dispensed = true;
     }
 };
 
 class Leaving : public StateHandler<State, State::Leaving> {
 public:
-    void on_enter(Machine& machine) override {
-        machine.scheduler.schedule(constants::leaving_timeout, [this, &machine](){ this->on_timeout(machine); });
-
-        machine.display.clearBuffer();
-        graphics::thank_you_scene.draw(machine.display, millis());
-        machine.display.sendBuffer();
+    void on_enter(Machine& machine, unsigned long now) override {
+        machine.scheduler.schedule(
+            constants::leaving_timeout,
+            [this, &machine, now]() {
+                this->on_timeout(machine, now);
+            }
+        );
     }
 
-    void on_input(Machine& machine, unsigned int input) override {
-        machine.transition(State::Home);
+    void on_update(Machine& machine, unsigned long now) override {
+        graphics::thank_you_scene.draw(machine.display, now);
+    }
+
+    void on_input(Machine& machine, unsigned int input, unsigned long now) override {
+        machine.transition(State::Home, now);
     }
 private:
-    void on_timeout(Machine& machine) {
-        machine.transition(State::Home);
+    void on_timeout(Machine& machine, unsigned long now) {
+        machine.transition(State::Home, now);
     }
 };
 
 class Fault : public StateHandler<State, State::Fault> {
 public:
-    void on_enter(Machine& machine) override {
-        machine.display.clearBuffer();
-        graphics::fault_scene.draw(machine.display, millis());
-        machine.display.sendBuffer();
+    void on_enter(Machine&, unsigned long) override {
+        return;
     }
 
-    void on_input(Machine& machine, unsigned int input) override {
+    void on_update(Machine& machine, unsigned long now) override {
+        graphics::fault_scene.draw(machine.display, now);
+    }
+
+    void on_input(Machine& machine, unsigned int input, unsigned long) override {
         Serial.println("cannot exit fault state!");
     }
 
-    bool on_exit(Machine& machine) override {
+    bool on_exit(Machine& machine, unsigned long) override {
         return false;
     }
 };

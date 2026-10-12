@@ -59,52 +59,52 @@ constexpr Sprite<12, 18, 1> ratio_2 PROGMEM = {
     "\077\000\077\000\077\000\077\000\077\000\077\000\377\017\177\010\177\010\177\010\177\010\177\010\177\010\177\010\177\010\177\010\177\010\377\017"
 };
 
-inline Scene home_scene = {
+inline Scene home_scene{
     element::Rectangle(128, 27, true, 0, 41, 1),
-    element::AnimatedSprite(graphics::waves, 0, 600, 0, 0, 32, 1),
-    element::AnimatedSprite(graphics::large_bubbles, 1, 300, 0, 0, 30, 2),
-    element::AnimatedSprite(graphics::large_bubbles, 1, 350, 700, 96, 25, 2),
+    element::AnimatedSprite(graphics::waves.view(), 0, 600, 0, 0, 32, 1),
+    element::AnimatedSprite(graphics::large_bubbles.view(), 1, 300, 0, 0, 30, 2),
+    element::AnimatedSprite(graphics::large_bubbles.view(), 1, 350, 700, 96, 25, 2),
     element::Text(u8g2_font_helvB12_tf, "AUTO-LOTUS", 1, 10, 24, 2),
     element::Text(u8g2_font_p01type_tf, "PRESS ANY BUTTON", 1, 26, 50, 2),
-    element::StaticSprite(graphics::ieee_logo, 0, 0, 0, 1),
+    element::StaticSprite(graphics::ieee_logo.view(), 0, 0, 0, 1),
     element::Text(u8g2_font_t0_11b_tr, "WSU IEEE", 0, 16, 2, 1)
 };
 
-inline Scene select_amount_scene = {
+inline Scene select_amount_scene{
     element::Text(u8g2_font_t0_13_tf, "SELECT SIZE", 0, 4, 18, 1),
-    element::StaticSprite(graphics::cup_size_0, 0, 6, 46, 1),
+    element::StaticSprite(graphics::cup_size_0.view(), 0, 6, 46, 1),
     element::Text(u8g2_font_6x12_tn, "4", 1, 16, 45, 2),
-    element::StaticSprite(graphics::cup_size_1, 0, 54, 40, 1),
+    element::StaticSprite(graphics::cup_size_1.view(), 0, 54, 40, 1),
     element::Text(u8g2_font_6x12_tn, "8", 1, 61, 42, 2),
-    element::StaticSprite(graphics::cup_size_2, 0, 103, 28, 1),
+    element::StaticSprite(graphics::cup_size_2.view(), 0, 103, 28, 1),
     element::Text(u8g2_font_6x12_tn, "16", 1, 107, 34, 2),
-    element::StaticSprite(graphics::ieee_logo, 0, 0, 0, 1),
+    element::StaticSprite(graphics::ieee_logo.view(), 0, 0, 0, 1),
     element::Text(u8g2_font_t0_11b_tr, "WSU IEEE", 0, 16, 2, 1)
 };
 
-inline Scene select_ratio_scene = {
+inline Scene select_ratio_scene{
     element::Text(u8g2_font_t0_13_tf, "SELECT RATIO", 0, 4, 18, 1),
-    element::StaticSprite(graphics::ratio_0, 0, 12, 38, 1),
-    element::StaticSprite(graphics::ratio_1, 0, 58, 42, 1),
-    element::StaticSprite(graphics::ratio_2, 0, 104, 46, 1),
-    element::StaticSprite(graphics::ieee_logo, 0, 0, 0, 1),
+    element::StaticSprite(graphics::ratio_0.view(), 0, 12, 38, 1),
+    element::StaticSprite(graphics::ratio_1.view(), 0, 58, 42, 1),
+    element::StaticSprite(graphics::ratio_2.view(), 0, 104, 46, 1),
+    element::StaticSprite(graphics::ieee_logo.view(), 0, 0, 0, 1),
     element::Text(u8g2_font_t0_11b_tr, "WSU IEEE", 0, 16, 2, 1)
 };
 
-inline Scene dispensing_scene = {
+inline Scene dispensing_scene{
     DISPENSE,
     element::Rectangle(84, 14, false, 22, 48, 1),
     element::Text(u8g2_font_t0_13_tf, "DISPENSING", 0, 4, 18, 1),
-    element::StaticSprite(graphics::ieee_logo, 0, 0, 0, 1),
+    element::StaticSprite(graphics::ieee_logo.view(), 0, 0, 0, 1),
     element::Text(u8g2_font_t0_11b_tr, "WSU IEEE", 0, 16, 2, 1)
 };
 
-inline Scene thank_you_scene = {
+inline Scene thank_you_scene{
     element::Text(u8g2_font_helvB12_tf, "AUTO-LOTUS", 0, 10, 24, 1),
     element::Text(u8g2_font_lubBI08_tf, "Thank You!", 0, 30, 50, 1)
 };
 
-inline Scene fault_scene = {
+inline Scene fault_scene{
     element::Text(u8g2_font_helvB12_tf, "CANCELLED", 0, 14, 24, 1)
 };
 

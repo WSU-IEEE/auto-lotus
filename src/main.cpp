@@ -1,5 +1,6 @@
 #include <Wire.h>
 
+#include "toast.hpp"
 #include "util.hpp"
 #include "lotus.hpp"
 #include "input.hpp"
@@ -18,17 +19,18 @@ U8G2_SH1106_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0, U8X8_PIN_NONE);
 
 Machine machine(u8g2);
 
+NotificationManager notifications(u8g2);
+
 #ifdef SIMULATE_INPUT
-constexpr SimulatedSource::InputEvent simulated_buttons[] = {
-    {5000, 0},
-    {10000, 0},
-    {15000, 0},
-    //{16000, 0}
+constexpr std::array simulated_buttons{
+    input::Event<4>{5000, input::button_pressed<4>(0)},
+    input::Event<4>{10000, input::button_pressed<4>(1)},
+    input::Event<4>{15000, {input::Type::Neutral, input::Type::Neutral, input::Type::Pressed, input::Type::Pressed}},
 };
 
-SimulatedSource input(simulated_buttons);
+input::SimulatedInput input_provider(simulated_buttons);
 #else
-ButtonInput input(constants::pins_btn);
+input::ButtonInput input_provider(constants::pins_btn);
 #endif
 
 void setup() {
@@ -39,7 +41,7 @@ void setup() {
     u8g2.setFontMode(1);
 
     // buttons with pull-down resistors makes sure they read LOW when not pressed and HIGH when pressed
-    input.setup();
+    input_provider.setup();
     // outputs to control the L298N motor driver (assuming IN1, IN2 for motor 1 and IN3, IN4 for motor 2)
     set_modes<OUTPUT>(constants::pins_motor);
 
@@ -49,16 +51,25 @@ void setup() {
     machine.add<Dispensing>();
     machine.add<Leaving>();
     machine.add<Fault>();
-    machine.transition(State::Home);
+
+    delay(1000);
+
+    machine.transition(State::Home, millis());
 
     Serial.println("setup complete!");
 }
 
 void loop() {
-    if (input.poll())
-        machine.input(input.button());
+    const unsigned long now = millis();
+    if (input_provider.poll(now))
+        machine.input(input_provider.button(), now);
 
-    machine.update();
+    u8g2.clearBuffer();
+
+    machine.update(now);
+    notifications.process(now);
+
+    u8g2.sendBuffer();
 
     delay(20);
 }

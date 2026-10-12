@@ -6,7 +6,7 @@
 #include "scheduler.hpp"
 #include "input.hpp"
 
-#define RESET_MOTORS setMotors<0, 4>({LOW, LOW, LOW, LOW});
+#define RESET_MOTORS set_motors<0, 4>({LOW, LOW, LOW, LOW});
 
 #define MOTOR_START 10000LU
 #define MOTOR_END   15000LU
@@ -21,11 +21,11 @@ Scheduler scheduler;
 volatile bool start = false;
 volatile bool end = false;
 
-ButtonSource input(constants::pins_btn);
+input::ButtonInput input_provider(constants::pins_btn);
 
-void enableMotor() {
+void enable_motor() {
     // OUT3 and OUT4 are swapped on motor driver board so for motor two, REVERSE and FORWARD are flipped, i.e. LOW, HIGH should start REVERSE but instead it does forward, it is inverted here to counter that
-    setMotors<0, 4>({LOW, HIGH, HIGH, LOW});
+    set_motors<0, 4>({LOW, HIGH, HIGH, LOW});
 }
 
 void setup() {
@@ -37,44 +37,74 @@ void setup() {
     u8g2.setFont(u8g2_font_9x15_tf);
 
     // outputs to control the L298N motor driver (assuming IN1, IN2 for motor 1 and IN3, IN4 for motor 2)
-    setModes<OUTPUT>(constants::pins_motor);
-    input.setup();
+    set_modes<OUTPUT>(constants::pins_motor);
+    input_provider.setup();
 
-    scheduler.schedule(MOTOR_START, [](){ enableMotor(); });
-    scheduler.schedule(MOTOR_END, [](){ RESET_MOTORS });
+    scheduler.schedule(
+        MOTOR_START,
+        []() {
+            enable_motor();
+        }
+    );
+    scheduler.schedule(
+        MOTOR_END,
+        []() {
+            RESET_MOTORS
+        }
+    );
 
-    scheduler.schedule(time_start, [](){ start = true; });
-    scheduler.schedule(time_end, [](){ end = true; });
+    scheduler.schedule(
+        time_start,
+        []() {
+            start = true;
+        }
+    );
+    scheduler.schedule(
+        time_end,
+        []() {
+            end = true;
+        }
+    );
 
     Serial.println("setup complete!");
 }
 
 void loop() {
-    scheduler.process();
+    const auto now = millis();
+
+    scheduler.process(now);
 
     u8g2.clearBuffer();
 
-    auto now = millis();
     char buffer[16];
     snprintf(buffer, sizeof(buffer), "%02lu.%03lu", now / 1000, now % 1000);
     u8g2.drawStr(16, 26, buffer);
 
-    if (start) u8g2.drawBox(96, 24, 8, 8);
-    else u8g2.drawFrame(96, 24, 8, 8);
-    if (end) u8g2.drawBox(96, 32, 8, 8);
-    else u8g2.drawFrame(96, 32, 8, 8);
+    if (start)
+        u8g2.drawBox(96, 24, 8, 8);
+    else
+        u8g2.drawFrame(96, 24, 8, 8);
+    if (end)
+        u8g2.drawBox(96, 32, 8, 8);
+    else
+        u8g2.drawFrame(96, 32, 8, 8);
 
-    Serial.println(input.poll() ? "BUTTON PRESSED!" : "NOTHING PRESSED.");
-    auto pressed = input.get();
+    Serial.println(input_provider.poll(now) ? "BUTTON PRESSED!" : "NOTHING PRESSED.");
+    auto pressed = input_provider.get();
     for (size_t i = 0; i < 4; ++i) {
-        Serial.print(pressed[i] == NEUTRAL ? "NEUTRAL" : pressed[i] == PRESSED ? "PRESSED" : "STALE");
+        Serial.print(pressed[i] == input::Type::Neutral ? "NEUTRAL" : pressed[i] == input::Type::Pressed ? "PRESSED" : "STALE");
         Serial.printf("(%d), ", digitalRead(constants::pins_btn[i]));
-        if (pressed[i]) u8g2.drawBox(32 + i * 10, 50, 8, 8);
-        else u8g2.drawFrame(32 + i * 10, 50, 8, 8);
+        if (pressed[i] == input::Type::Pressed)
+            u8g2.drawBox(32 + i * 10, 50, 8, 8);
+        else if (pressed[i] == input::Type::Stale) {
+            u8g2.drawFrame(32 + i * 10, 50, 8, 8);
+            u8g2.drawBox(34 + i * 10, 52, 4, 4);
+        } else
+            u8g2.drawFrame(32 + i * 10, 50, 8, 8);
     }
     Serial.print("\n");
 
     u8g2.sendBuffer();
 
-    delay(500);
+    //delay(500);
 }

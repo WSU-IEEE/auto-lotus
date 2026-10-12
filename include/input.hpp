@@ -3,12 +3,14 @@
 #include "util.hpp"
 #include "scheduler.hpp"
 
+namespace input {
+
+enum class Type : uint8_t {
+    Neutral, Pressed, Stale
+};
+
 template <size_t N>
 class ButtonInput {
-public:
-    enum class Type : uint8_t {
-        Neutral, Pressed, Stale
-    };
 private:
     const std::array<uint8_t, N>& m_pins;
     std::array<Type, N> m_pressed{};
@@ -21,7 +23,7 @@ public:
         set_modes<INPUT>(m_pins);
     }
 
-    bool poll() {
+    bool poll(unsigned long now) {
         int read[N];
         for (size_t i = 0; i < N; ++i)
             read[i] = digitalRead(m_pins[i]);
@@ -29,14 +31,14 @@ public:
         bool event = false;
 
         for (size_t i = 0; i < N; i++) {
-            if (!read[i]) { // read at LOW means pressed
+            if (read[i]) { // read at LOW means pressed
                 if(m_pressed[i] == Type::Pressed)
                     m_pressed[i] = Type::Stale;
-                else if (!static_cast<uint8_t>(m_pressed[i])) {
+                else if (m_pressed[i] == Type::Neutral) {
                     m_pressed[i] = Type::Pressed;
                     event = true;
                 }
-            } else if (static_cast<uint8_t>(m_pressed[i]))
+            } else if (m_pressed[i] != Type::Neutral)
                 m_pressed[i] = Type::Neutral;
         }
 
@@ -55,42 +57,70 @@ public:
     }
 };
 
-template <size_t Buttons, size_t Events>
-class SimulatedInput { // TODO this is not working!
+template<size_t N>
+struct Event {
+    unsigned int time;
+    std::array<Type, N> buttons;
+};
+
+template <size_t N>
+class SimulatedInput {
 private:
     Scheduler m_scheduler;
-    std::array<uint8_t, Buttons> m_pressed{};
+    std::array<Type, N> m_pressed{};
     bool m_stale = false;
 public:
-    struct Event {
-        unsigned int time;
-        std::array<uint8_t, Buttons> buttons;
-    };
+    using Event = struct input::Event<N>;
 public:
-    SimulatedInput(const std::array<Event, Events>& inputs) {
-        for (size_t i = 0; i < Events; i++)
+    template <size_t E>
+    explicit SimulatedInput(const std::array<Event, E>& inputs) {
+        for (size_t i = 0; i < E; i++)
             m_scheduler.schedule(
                 inputs[i].time,
                 [this, inputs, i]() {
-                    this->press(inputs[i].button);
+                    this->press(inputs[i].buttons);
                 }
             );
     }
 
     void setup() { }
 
-    bool poll(std::array<uint8_t, Buttons>& buttons) {
-        m_scheduler.process();
-        auto button = m_pressed;
+    bool poll(unsigned long now) {
+        m_scheduler.process(now);
         if (m_stale)
             return false;
         m_stale = true;
-        buttons = m_pressed;
         return true;
     }
 
-    void press(const std::array<uint8_t, Buttons>& buttons) {
+    void press(const std::array<Type, N>& buttons) {
         m_pressed = buttons;
         m_stale = false;
     }
+
+    int button() const {
+        for (size_t i = 0; i < N; i++)
+            if (m_pressed[i] == Type::Pressed)
+                return static_cast<int>(i);
+        return -1;
+    }
+
+    const std::array<Type, N>& get() const {
+        return m_pressed;
+    }
 };
+
+template <size_t N>
+constexpr std::array<Type, N> button_pressed(size_t index) {
+    std::array<Type, N> buttons{};
+
+    if (index < N)
+        buttons[index] = Type::Pressed;
+
+    return buttons;
+}
+
+template <size_t N, size_t E>
+SimulatedInput(const std::array<Event<N>, E>&) -> SimulatedInput<N>;
+
+} // namespace input
