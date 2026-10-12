@@ -16,10 +16,11 @@
  * U8G2_R0 to indicate on rotation.
 */
 U8G2_SH1106_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0, U8X8_PIN_NONE);
-
-Machine machine(u8g2);
-
 NotificationManager notifications(u8g2);
+
+Context context{u8g2, notifications};
+
+Machine machine(context);
 
 #ifdef SIMULATE_INPUT
 constexpr std::array simulated_buttons{

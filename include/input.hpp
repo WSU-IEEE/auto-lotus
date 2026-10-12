@@ -31,7 +31,7 @@ public:
         bool event = false;
 
         for (size_t i = 0; i < N; i++) {
-            if (read[i]) { // read at LOW means pressed
+            if (read[i]) {
                 if(m_pressed[i] == Type::Pressed)
                     m_pressed[i] = Type::Stale;
                 else if (m_pressed[i] == Type::Neutral) {

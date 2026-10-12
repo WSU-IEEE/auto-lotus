@@ -4,6 +4,7 @@
 #include "state.hpp"
 #include "graphics.hpp"
 #include "util.hpp"
+#include "toast.hpp"
 
 // state machine stuff
 
@@ -17,13 +18,20 @@ enum class State {
     Count // appended so compiler can get the number of enums
 };
 
-using Machine = StateMachine<State>;
+struct Context {
+    U8G2& display;
+    NotificationManager& notifications;
+};
+
+using Machine = StateMachine<State, Context>;
 
 #define RESET_MOTORS set_motors<0, 4>({LOW, LOW, LOW, LOW});
 
-class Home : public StateHandler<State, State::Home> {
+class Home : public StateHandler<State, State::Home, Context> {
 public:
     void on_enter(Machine& machine, unsigned long now) override {
+        machine.context.notifications.send(Toast{graphics::cup_size_0.view(), "testing"});
+
         asleep = false;
 
         schedule(machine);
@@ -32,7 +40,7 @@ public:
     void on_input(Machine& machine, unsigned int input, unsigned long now) override {
         if (asleep) {
             asleep = false;
-            machine.display.setPowerSave(0);
+            machine.context.display.setPowerSave(0);
             machine.scheduler.reset(now);
             schedule(machine);
         } else {
@@ -41,14 +49,14 @@ public:
     }
 
     void on_update(Machine& machine, unsigned long now) override {
-        graphics::home_scene.draw(machine.display, now);
+        graphics::home_scene.draw(machine.context.display, now);
     }
 private:
     volatile bool asleep = false;
 
     void on_timeout(Machine& machine) {
         asleep = true;
-        machine.display.setPowerSave(1);
+        machine.context.display.setPowerSave(1);
     }
 
     inline void schedule(Machine& machine) {
@@ -63,7 +71,7 @@ private:
     }
 };
 
-class SelectAmount : public StateHandler<State, State::SelectAmount> {
+class SelectAmount : public StateHandler<State, State::SelectAmount, Context> {
 public:
     double amount = 0.0;
 public:
@@ -83,7 +91,7 @@ public:
     }
 
     void on_update(Machine& machine, unsigned long now) override {
-        graphics::select_amount_scene.draw(machine.display, now);
+        graphics::select_amount_scene.draw(machine.context.display, now);
     }
 private:
     void on_timeout(Machine& machine, unsigned long now) {
@@ -91,7 +99,7 @@ private:
     }
 };
 
-class SelectRatio : public StateHandler<State, State::SelectRatio> {
+class SelectRatio : public StateHandler<State, State::SelectRatio, Context> {
 public:
     void on_enter(Machine& machine, unsigned long now) override {
         machine.scheduler.schedule(
@@ -109,7 +117,7 @@ public:
     }
 
     void on_update(Machine& machine, unsigned long now) override {
-        graphics::select_ratio_scene.draw(machine.display, now);
+        graphics::select_ratio_scene.draw(machine.context.display, now);
     }
 
     double ratio = 0.0;
@@ -119,7 +127,7 @@ private:
     }
 };
 
-class Dispensing : public StateHandler<State, State::Dispensing> { // TODO add a "menu" to confirm halting dispensing
+class Dispensing : public StateHandler<State, State::Dispensing, Context> { // TODO add a "menu" to confirm halting dispensing
 public:
     void on_enter(Machine& machine, unsigned long now) override {
         dispensed = false;
@@ -168,7 +176,7 @@ public:
     }
 
     void on_update(Machine& machine, unsigned long now) override {
-        graphics::dispensing_scene.draw(machine.display, now);
+        graphics::dispensing_scene.draw(machine.context.display, now);
     }
 private:
     volatile bool dispensed = false; // use atomic?
@@ -182,7 +190,7 @@ private:
     }
 };
 
-class Leaving : public StateHandler<State, State::Leaving> {
+class Leaving : public StateHandler<State, State::Leaving, Context> {
 public:
     void on_enter(Machine& machine, unsigned long now) override {
         machine.scheduler.schedule(
@@ -194,7 +202,7 @@ public:
     }
 
     void on_update(Machine& machine, unsigned long now) override {
-        graphics::thank_you_scene.draw(machine.display, now);
+        graphics::thank_you_scene.draw(machine.context.display, now);
     }
 
     void on_input(Machine& machine, unsigned int input, unsigned long now) override {
@@ -206,14 +214,14 @@ private:
     }
 };
 
-class Fault : public StateHandler<State, State::Fault> {
+class Fault : public StateHandler<State, State::Fault, Context> {
 public:
     void on_enter(Machine&, unsigned long) override {
         return;
     }
 
     void on_update(Machine& machine, unsigned long now) override {
-        graphics::fault_scene.draw(machine.display, now);
+        graphics::fault_scene.draw(machine.context.display, now);
     }
 
     void on_input(Machine& machine, unsigned int input, unsigned long) override {

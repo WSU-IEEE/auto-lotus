@@ -49,6 +49,10 @@ public:
         return true;
     }
 
+    bool send(SpriteView sprite, std::string_view label) {
+        return send(Toast{sprite, label});
+    }
+
     void reset() {
         m_head = m_count = 0;
     }

@@ -2,30 +2,30 @@
 
 #include "scheduler.hpp"
 
-template <typename E>
+template <typename E, typename Context>
 class StateMachine;
 
-template <typename E>
+template <typename E, typename Context>
 class IStateHandler {
 public:
-    virtual void on_enter(StateMachine<E>& machine, unsigned long now) = 0;
-    virtual bool on_exit(StateMachine<E>& machine, unsigned long now) {
+    virtual void on_enter(StateMachine<E, Context>& machine, unsigned long now) = 0;
+    virtual bool on_exit(StateMachine<E, Context>& machine, unsigned long now) {
         return true;
     };
-    virtual void on_input(StateMachine<E>& machine, unsigned int input, unsigned long now) = 0;
-    virtual void on_update(StateMachine<E>& machine, unsigned long now) { };
+    virtual void on_input(StateMachine<E, Context>& machine, unsigned int input, unsigned long now) = 0;
+    virtual void on_update(StateMachine<E, Context>& machine, unsigned long now) { };
 };
 
-template <typename E, E State>
-class StateHandler : public IStateHandler<E> {
+template <typename E, E State, typename Context>
+class StateHandler : public IStateHandler<E, Context> {
 public:
     static constexpr E state = State;
 };
 
-template <typename E>
+template <typename E, typename Context>
 class StateMachine {
 public:
-    StateMachine(U8G2& display) : display(display) { };
+    StateMachine(Context& context) : context(context) { };
 
     template <typename H>
     H& get_handler() {
@@ -57,9 +57,9 @@ public:
         scheduler.process(now);
     }
 
-    U8G2& display;
+    Context context;
     Scheduler scheduler;
 protected:
-    IStateHandler<E>* m_handlers[static_cast<size_t>(E::Count)]; // you must append the enum Count to the end of the list in order to get the length
+    IStateHandler<E, Context>* m_handlers[static_cast<size_t>(E::Count)]; // you must append the enum Count to the end of the list in order to get the length
     E m_current;
 };
