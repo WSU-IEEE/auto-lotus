@@ -264,5 +264,22 @@
         "y": 24
       }
     ]
+  },
+  "toasts": {
+    "syrup_low": {
+      "icon": {
+        "name": "ieee_logo",
+        "bitmap_mode": 1,
+        "draw_color": 1,
+        "offset": 1,
+        "time": 1
+      },
+      "label": {
+        "text": "SYRUP LOW!",
+        "draw_color": 1,
+        "font": "u8g2_font_t0_11_tf",
+        "font_mode": 1
+      }
+    }
   }
 }

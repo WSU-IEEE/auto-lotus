@@ -40,74 +40,74 @@ namespace element {
 
 struct StaticSprite {
 public:
-    constexpr StaticSprite(SpriteView sprite, uint8_t bitmapMode, u8g2_uint_t x, u8g2_uint_t y, uint8_t drawColor)
-    : sprite(sprite), x(x), y(y), bitmapMode(bitmapMode), drawColor(drawColor)
+    constexpr StaticSprite(SpriteView sprite, uint8_t bitmap_mode, u8g2_uint_t x, u8g2_uint_t y, uint8_t draw_color)
+    : sprite(sprite), x(x), y(y), bitmap_mode(bitmap_mode), draw_color(draw_color)
     { }
 
     void draw(U8G2& u8g2, unsigned long now) const {
-        u8g2.setBitmapMode(bitmapMode);
-        u8g2.setDrawColor(drawColor);
+        u8g2.setBitmapMode(bitmap_mode);
+        u8g2.setDrawColor(draw_color);
         u8g2.drawXBMP(x, y, sprite.width, sprite.height, sprite.frames);
     }
 private:
     SpriteView sprite;
-    uint8_t bitmapMode;
+    uint8_t bitmap_mode;
     // common
     u8g2_uint_t x, y;
-    uint8_t drawColor;
+    uint8_t draw_color;
 };
 
 struct AnimatedSprite {
 public:
-    constexpr AnimatedSprite(SpriteView sprite, uint8_t bitmapMode, unsigned long time, unsigned long offset, u8g2_uint_t x, u8g2_uint_t y, uint8_t drawColor)
-    : sprite(sprite), bitmapMode(bitmapMode), time(time), offset(offset), x(x), y(y), drawColor(drawColor)
+    constexpr AnimatedSprite(SpriteView sprite, uint8_t bitmap_mode, unsigned long time, unsigned long offset, u8g2_uint_t x, u8g2_uint_t y, uint8_t draw_color)
+    : sprite(sprite), bitmap_mode(bitmap_mode), time(time), offset(offset), x(x), y(y), draw_color(draw_color)
     { }
 
     void draw(U8G2& u8g2, unsigned long now) const {
-        u8g2.setBitmapMode(bitmapMode);
-        u8g2.setDrawColor(drawColor);
+        u8g2.setBitmapMode(bitmap_mode);
+        u8g2.setDrawColor(draw_color);
         size_t frame = ((now + offset) / time) % sprite.count;
         u8g2.drawXBMP(x, y, sprite.width, sprite.height, sprite.frame(frame));
     }
 private:
     SpriteView sprite;
-    uint8_t bitmapMode;
+    uint8_t bitmap_mode;
     unsigned long time;
     unsigned long offset;
     // common
     u8g2_uint_t x, y;
-    uint8_t drawColor;
+    uint8_t draw_color;
 };
 
 struct Text {
 public:
-    constexpr Text(const uint8_t* font, const char* text, uint8_t fontMode, u8g2_uint_t x, u8g2_uint_t y, uint8_t drawColor) :
-        font(font), text(text), fontMode(fontMode),
-        x(x), y(y), drawColor(drawColor) { }
+    constexpr Text(const uint8_t* font, const char* text, uint8_t font_mode, u8g2_uint_t x, u8g2_uint_t y, uint8_t draw_color) :
+        font(font), text(text), font_mode(font_mode),
+        x(x), y(y), draw_color(draw_color) { }
 
     void draw(U8G2& u8g2, unsigned long now) const {
-        u8g2.setDrawColor(drawColor);
-        u8g2.setFontMode(fontMode);
+        u8g2.setDrawColor(draw_color);
+        u8g2.setFontMode(font_mode);
         u8g2.setFont(font);
         u8g2.drawStr(x, y, text);
     }
 private:
     const uint8_t* font;
     const char* text;
-    uint8_t fontMode;
+    uint8_t font_mode;
     // common
     u8g2_uint_t x, y;
-    uint8_t drawColor;
+    uint8_t draw_color;
 };
 
 struct Rectangle {
 public:
-    constexpr Rectangle(u8g2_uint_t width, u8g2_uint_t height, bool filled, u8g2_uint_t x, u8g2_uint_t y, uint8_t drawColor) :
+    constexpr Rectangle(u8g2_uint_t width, u8g2_uint_t height, bool filled, u8g2_uint_t x, u8g2_uint_t y, uint8_t draw_color) :
         width(width), height(height), filled(filled),
-        x(x), y(y), drawColor(drawColor) { }
+        x(x), y(y), draw_color(draw_color) { }
 
     void draw(U8G2& u8g2, unsigned long now) const {
-        u8g2.setDrawColor(drawColor);
+        u8g2.setDrawColor(draw_color);
         filled ? u8g2.drawBox(x, y, width, height) : u8g2.drawFrame(x, y, width, height);
     }
 private:
@@ -115,7 +115,7 @@ private:
     bool filled;
     // common
     u8g2_uint_t x, y;
-    uint8_t drawColor;
+    uint8_t draw_color;
 };
 
 } // namespace element

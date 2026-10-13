@@ -3,6 +3,7 @@
 
 #include "scene.hpp"
 #include "custom.hpp"
+#include "toast.hpp"
 
 namespace graphics {
 
@@ -107,5 +108,10 @@ inline Scene thank_you_scene{
 inline Scene fault_scene{
     element::Text(u8g2_font_helvB12_tf, "CANCELLED", 0, 14, 24, 1)
 };
+
+inline Toast syrup_low(
+    Toast::Icon{graphics::ieee_logo.view(), 1, 1},
+    Toast::Label{u8g2_font_t0_11_tf, "SYRUP LOW!", 1, 1}
+);
 
 } // namespace graphics

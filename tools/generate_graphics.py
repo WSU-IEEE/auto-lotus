@@ -17,6 +17,8 @@ from PIL import Image
 BYTE_DTYPE = np.uint8
 BYTE_SIZE = np.dtype(BYTE_DTYPE).itemsize * 8
 
+# scene elements
+
 class Element(TypedDict):
     draw_color: NotRequired[int]
     x: int
@@ -48,9 +50,32 @@ class Custom(TypedDict):
 ElementType: TypeAlias = Asset | Text | Rectangle | Custom
 Elements: TypeAlias = list[ElementType]
 
+# toast elements
+
+class Icon(TypedDict):
+    name: str
+    time: NotRequired[int]
+    offset: NotRequired[int]
+    bitmap_mode: NotRequired[int]
+    draw_color: NotRequired[int]
+
+class Label(TypedDict):
+    text: str
+    font: NotRequired[int]
+    font_mode: NotRequired[int]
+    draw_color: NotRequired[int]
+
+class Toast(TypedDict):
+    icon: Icon
+    label: Label
+
+ToastType: TypeAlias = Icon | Label
+ToastElements: TypeAlias = list[ToastType]
+
 class Data(TypedDict):
     assets: dict[str, list[str]] | dict[str, str]
     scenes: dict[str, Elements] | list[str]
+    toasts: dict[str, Toast]
 
 @dataclass
 class Sprite:
@@ -78,7 +103,7 @@ def write_bytes(out: TextIO, image: Image.Image, indent: int):
 
     data = np.ravel(np.packbits(pixels, axis=1, bitorder="little"))
 
-    prefix = " " * indent;
+    prefix = " " * indent
     values = "".join(f"\\{x:03o}" for x in data)
     _ = out.write(f"{prefix}\"{values}\"")
 
@@ -92,7 +117,7 @@ def write_static(out: TextIO, name: str, path: str):
 
 
 def write_animated(out: TextIO, name: str, paths: list[str]):
-    images = [Image.open(path) for path in paths];
+    images = [Image.open(path) for path in paths]
     _ = out.write(f"constexpr Sprite<{images[0].width}, {images[0].height}, {len(images)}> {name} PROGMEM = {{\n")
 
     for i, image in enumerate(images):
@@ -114,7 +139,7 @@ def cpp_constructor(name: str, *args: object) -> str:
 
 def element_expression(element: ElementType) -> str:
     if element["type"] == "custom":
-        return element["name"];
+        return element["name"]
 
     x = element["x"]
     y = element["y"]
@@ -137,7 +162,7 @@ def element_expression(element: ElementType) -> str:
 
 
 def write_element(out: TextIO, element: ElementType, indent: int):
-    prefix = " " * indent;
+    prefix = " " * indent
     expression = element_expression(element)
     _ = out.write(prefix + expression)
 
@@ -145,13 +170,14 @@ def write_element(out: TextIO, element: ElementType, indent: int):
 def write_complex_scene(out: TextIO, name: str, elements: Elements):
     _ = out.write(f"inline Scene {name}{{\n")
     for i, element in enumerate(elements):
-        write_element(out, element, 4);
+        write_element(out, element, 4)
         if i + 1 < len(elements):
             _ = out.write(",\n")
     _ = out.write("\n};\n\n")
 
+
 def write_simple_scene(out: TextIO, name: str):
-    _ = out.write(f"constexpr Scene {name}_scene{{\n");
+    _ = out.write(f"constexpr Scene {name}_scene{{\n")
 
     element: Asset = {
         "type": "asset",
@@ -160,8 +186,44 @@ def write_simple_scene(out: TextIO, name: str):
         "y": 0,
     };
 
-    write_element(out, element, 4);
-    _ = out.write("\n};\n\n");
+    write_element(out, element, 4)
+    _ = out.write("\n};\n\n")
+
+# toasts
+
+def cpp_aggregate(*args: object) -> str:
+    return ', '.join(map(str, args))
+
+
+def toast_element_expression(element: ToastType) -> str:
+    draw_color: int = element.get("draw_color", 1)
+    if "name" in element:
+        name = element["name"]
+        assert name in asset_map, f"asset {name} not defined in asset map!"
+        bitmap_mode: int = element.get("bitmap_mode", 0)
+        if isinstance(asset_map[name], AnimatedSprite):
+            return cpp_aggregate(f"graphics::{name}.view()", bitmap_mode, draw_color, element.get("time", 300), element.get("offset", 0))
+        else:
+            return cpp_aggregate(f"graphics::{name}.view()", bitmap_mode, draw_color)
+    elif "text":
+        return cpp_aggregate(element.get("font", "u8g2_font_t0_14_mf"), f"\"{element["text"]}\"", element.get("font_mode", 0), draw_color)
+    else:
+        assert_never()
+
+
+def write_toast_element(out: TextIO, element: ElementType, indent: int):
+    prefix = " " * indent + "{"
+    expression = toast_element_expression(element)
+    _ = out.write(prefix + expression + "}")
+
+
+def write_toast(out: TextIO, name: str, toast: Toast):
+    _ = out.write(f"inline Toast {name}(\n")
+    write_toast_element(out, toast["icon"], 4)
+    _ = out.write(",\n")
+    write_toast_element(out, toast["label"], 4)
+    _ = out.write("\n);\n\n")
+
 
 def main():
     with open(sys.argv[2], "w") as out, open(sys.argv[1], "r") as file:
@@ -171,36 +233,41 @@ def main():
 
 #include "scene.hpp"
 #include "custom.hpp"
+#include "toast.hpp"
 
 namespace graphics {
 
 """
         );
 
-        data = cast(Data, json.load(file));
-        assets = data["assets"];
-        scenes = data["scenes"];
+        data = cast(Data, json.load(file))
+        assets = data["assets"]
+        scenes = data["scenes"]
+        toasts = data["toasts"]
 
         for (name, value) in assets.items():
             assert name not in asset_map, f"asset {name} already exists!"
             if isinstance(value, list):
-                write_animated(out, name, value);
+                write_animated(out, name, value)
             else:
-                write_static(out, name, value);
+                write_static(out, name, value)
 
         if isinstance(scenes, list):
             for scene in scenes:
-                write_simple_scene(out, scene);
+                write_simple_scene(out, scene)
         else:
             for (name, scene) in scenes.items():
-                write_complex_scene(out, name, scene);
+                write_complex_scene(out, name, scene)
+
+        for (name, toast) in toasts.items():
+            write_toast(out, name, toast)
 
         _ = out.write("""\
 } // namespace graphics
 """
-        );
+        )
 
-        print(f"outputted cpp header from '{sys.argv[1]}' at '{sys.argv[2]}'");
+        print(f"outputted cpp header from '{sys.argv[1]}' at '{sys.argv[2]}'")
 
 if __name__ == "__main__":
     main()

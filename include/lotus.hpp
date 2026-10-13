@@ -30,7 +30,7 @@ using Machine = StateMachine<State, Context>;
 class Home : public StateHandler<State, State::Home, Context> {
 public:
     void on_enter(Machine& machine, unsigned long now) override {
-        machine.context.notifications.send(Toast{graphics::cup_size_0.view(), "testing"});
+        machine.context.notifications.send(graphics::syrup_low);
 
         asleep = false;
 

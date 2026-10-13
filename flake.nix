@@ -43,7 +43,7 @@
                         ln -sf ${clangd}/bin/clangd $PWD/.dev-clangd
                         export PLATFORMIO_CORE_DIR="$PWD/.platformio"
                         export PYTHONPATH="$PWD:$PYTHONPATH"
-                        alias up="$PWD/tools/upload.sh complex"
+                        alias up="$PWD/tools/upload.sh main"
                         upload() {
                             $PWD/tools/upload.sh $1
                         }
