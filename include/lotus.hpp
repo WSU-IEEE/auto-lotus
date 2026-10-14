@@ -1,5 +1,6 @@
 #pragma once
 
+#include "input.hpp"
 #include "scene.hpp"
 #include "state.hpp"
 #include "graphics.hpp"
@@ -14,7 +15,7 @@ enum class State {
     SelectRatio,
     Dispensing,
     Leaving,
-    Fault,
+    Cancelled,
     Count // appended so compiler can get the number of enums
 };
 
@@ -37,14 +38,15 @@ public:
         schedule(machine);
     }
 
-    void on_input(Machine& machine, unsigned int input, unsigned long now) override {
+    void on_input(Machine& machine, const std::array<input::Type, constants::button_pins>& pressed, unsigned long now) override {
         if (asleep) {
             asleep = false;
             machine.context.display.setPowerSave(0);
             machine.scheduler.reset(now);
             schedule(machine);
         } else {
-            machine.transition(State::SelectAmount, now);
+            if (input::button(pressed) < 3)
+                machine.transition(State::SelectAmount, now);
         }
     }
 
@@ -84,8 +86,13 @@ public:
         );
     }
 
-    void on_input(Machine& machine, unsigned int input, unsigned long now) override {
-        amount = constants::dispense_amount[input];
+    void on_input(Machine& machine, const std::array<input::Type, constants::button_pins>& pressed, unsigned long now) override {
+        if (pressed[3] == input::Type::Pressed) {
+            machine.transition(State::Home, now);
+            return;
+        }
+        auto button = input::button(pressed);
+        amount = constants::dispense_amount[button];
         Serial.println(amount);
         machine.transition(State::SelectRatio, now);
     }
@@ -110,8 +117,13 @@ public:
         );
     }
 
-    void on_input(Machine& machine, unsigned int input, unsigned long now) override {
-        ratio = constants::soda_ratio[input];
+    void on_input(Machine& machine, const std::array<input::Type, constants::button_pins>& pressed, unsigned long now) override {
+        if (pressed[3] == input::Type::Pressed) {
+            machine.transition(State::Home, now);
+            return;
+        }
+        auto button = input::button(pressed);
+        ratio = constants::soda_ratio[button];
         Serial.println(machine.get_handler<SelectAmount>().amount);
         machine.transition(State::Dispensing, now);
     }
@@ -171,8 +183,8 @@ public:
         return true;
     }
 
-    void on_input(Machine& machine, unsigned int input, unsigned long now) override {
-        machine.transition(State::Fault, now);
+    void on_input(Machine& machine, const std::array<input::Type, constants::button_pins>& pressed, unsigned long now) override {
+        machine.transition(State::Cancelled, now);
     }
 
     void on_update(Machine& machine, unsigned long now) override {
@@ -205,7 +217,7 @@ public:
         graphics::thank_you_scene.draw(machine.context.display, now);
     }
 
-    void on_input(Machine& machine, unsigned int input, unsigned long now) override {
+    void on_input(Machine& machine, const std::array<input::Type, constants::button_pins>& pressed, unsigned long now) override {
         machine.transition(State::Home, now);
     }
 private:
@@ -214,21 +226,26 @@ private:
     }
 };
 
-class Fault : public StateHandler<State, State::Fault, Context> {
+class Cancelled : public StateHandler<State, State::Cancelled, Context> {
 public:
-    void on_enter(Machine&, unsigned long) override {
-        return;
+    void on_enter(Machine& machine, unsigned long now) override {
+        machine.scheduler.schedule(
+            constants::cancelled_timeout,
+            [this, &machine, now]() {
+                this->on_timeout(machine, now);
+            }
+        );
     }
 
     void on_update(Machine& machine, unsigned long now) override {
         graphics::fault_scene.draw(machine.context.display, now);
     }
 
-    void on_input(Machine& machine, unsigned int input, unsigned long) override {
-        Serial.println("cannot exit fault state!");
+    void on_input(Machine& machine, const std::array<input::Type, constants::button_pins>& pressed, unsigned long now) override {
+        machine.transition(State::Home, now);
     }
-
-    bool on_exit(Machine& machine, unsigned long) override {
-        return false;
+private:
+    void on_timeout(Machine& machine, unsigned long now) {
+        machine.transition(State::Home, now);
     }
 };

@@ -10,6 +10,14 @@ enum class Type : uint8_t {
 };
 
 template <size_t N>
+int button(const std::array<Type, N> pressed) {
+    for (size_t i = 0; i < N; i++)
+        if (pressed[i] == Type::Pressed)
+            return i;
+    return -1;
+}
+
+template <size_t N>
 class ButtonInput {
 private:
     const std::array<uint8_t, N>& m_pins;
@@ -46,10 +54,7 @@ public:
     }
 
     int button() {
-        for (size_t i = 0; i < N; i++)
-            if (m_pressed[i] == Type::Pressed)
-                return i;
-        return -1;
+        return button(m_pressed);
     }
 
     const std::array<Type, N>& get() const {
@@ -99,10 +104,7 @@ public:
     }
 
     int button() const {
-        for (size_t i = 0; i < N; i++)
-            if (m_pressed[i] == Type::Pressed)
-                return static_cast<int>(i);
-        return -1;
+        return button(m_pressed);
     }
 
     const std::array<Type, N>& get() const {

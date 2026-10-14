@@ -69,13 +69,14 @@ class Toast(TypedDict):
     icon: Icon
     label: Label
 
-ToastType: TypeAlias = Icon | Label
-ToastElements: TypeAlias = list[ToastType]
+ToastComponent: TypeAlias = Icon | Label
 
 class Data(TypedDict):
     assets: dict[str, list[str]] | dict[str, str]
     scenes: dict[str, Elements] | list[str]
     toasts: dict[str, Toast]
+
+# assets
 
 @dataclass
 class Sprite:
@@ -92,7 +93,7 @@ class StaticSprite(Sprite):
 
 asset_map: dict[str, Sprite] = {}
 
-def write_bytes(out: TextIO, image: Image.Image, indent: int):
+def write_sprite_bytes(out: TextIO, image: Image.Image, indent: int):
     pixels = np.asarray(image.convert("1"), dtype=BYTE_DTYPE)
     _, width = map(int, pixels.shape)
 
@@ -108,20 +109,20 @@ def write_bytes(out: TextIO, image: Image.Image, indent: int):
     _ = out.write(f"{prefix}\"{values}\"")
 
 
-def write_static(out: TextIO, name: str, path: str):
+def write_static_sprite(out: TextIO, name: str, path: str):
     with Image.open(path) as image:
         _ = out.write(f"constexpr Sprite<{image.width}, {image.height}, 1> {name} PROGMEM = {{\n")
-        write_bytes(out, image, 4)
+        write_sprite_bytes(out, image, 4)
         _ = out.write("\n};\n\n")
         asset_map[name] = StaticSprite(image.width, image.height)
 
 
-def write_animated(out: TextIO, name: str, paths: list[str]):
+def write_animated_sprite(out: TextIO, name: str, paths: list[str]):
     images = [Image.open(path) for path in paths]
     _ = out.write(f"constexpr Sprite<{images[0].width}, {images[0].height}, {len(images)}> {name} PROGMEM = {{\n")
 
     for i, image in enumerate(images):
-        write_bytes(out, image, 4);
+        write_sprite_bytes(out, image, 4);
         if i + 1 < len(images):
             _ = out.write(",\n")
 
@@ -195,7 +196,7 @@ def cpp_aggregate(*args: object) -> str:
     return ', '.join(map(str, args))
 
 
-def toast_element_expression(element: ToastType) -> str:
+def component_expression(element: ToastType) -> str:
     draw_color: int = element.get("draw_color", 1)
     if "name" in element:
         name = element["name"]
@@ -211,17 +212,17 @@ def toast_element_expression(element: ToastType) -> str:
         assert_never()
 
 
-def write_toast_element(out: TextIO, element: ElementType, indent: int):
+def write_toast_component(out: TextIO, element: ToastComponent, indent: int):
     prefix = " " * indent + "{"
-    expression = toast_element_expression(element)
+    expression = component_expression(element)
     _ = out.write(prefix + expression + "}")
 
 
 def write_toast(out: TextIO, name: str, toast: Toast):
     _ = out.write(f"inline Toast {name}(\n")
-    write_toast_element(out, toast["icon"], 4)
+    write_toast_component(out, toast["icon"], 4)
     _ = out.write(",\n")
-    write_toast_element(out, toast["label"], 4)
+    write_toast_component(out, toast["label"], 4)
     _ = out.write("\n);\n\n")
 
 
@@ -248,9 +249,9 @@ namespace graphics {
         for (name, value) in assets.items():
             assert name not in asset_map, f"asset {name} already exists!"
             if isinstance(value, list):
-                write_animated(out, name, value)
+                write_animated_sprite(out, name, value)
             else:
-                write_static(out, name, value)
+                write_static_sprite(out, name, value)
 
         if isinstance(scenes, list):
             for scene in scenes:
@@ -268,6 +269,7 @@ namespace graphics {
         )
 
         print(f"outputted cpp header from '{sys.argv[1]}' at '{sys.argv[2]}'")
+
 
 if __name__ == "__main__":
     main()

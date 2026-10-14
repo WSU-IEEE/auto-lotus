@@ -110,8 +110,8 @@ inline Scene fault_scene{
 };
 
 inline Toast syrup_low(
-    Toast::Icon{graphics::ieee_logo.view(), 1, 1},
-    Toast::Label{u8g2_font_t0_11_tf, "SYRUP LOW!", 1, 1}
+    {graphics::ieee_logo.view(), 1, 1},
+    {u8g2_font_t0_11_tf, "SYRUP LOW!", 1, 1}
 );
 
 } // namespace graphics

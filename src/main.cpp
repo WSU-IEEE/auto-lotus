@@ -5,7 +5,7 @@
 #include "lotus.hpp"
 #include "input.hpp"
 
-// #define SIMULATE_INPUT
+#define SIMULATE_INPUT
 
 /*
  * https://github.com/olikraus/u8g2/wiki/u8g2setupcpp#constructor-name
@@ -24,9 +24,9 @@ Machine machine(context);
 
 #ifdef SIMULATE_INPUT
 constexpr std::array simulated_buttons{
-    input::Event<4>{5000, input::button_pressed<4>(0)},
-    input::Event<4>{10000, input::button_pressed<4>(1)},
-    input::Event<4>{15000, {input::Type::Neutral, input::Type::Neutral, input::Type::Pressed, input::Type::Pressed}},
+    input::Event<4>{10000, input::button_pressed<4>(0)},
+    input::Event<4>{15000, input::button_pressed<4>(3)},
+    //input::Event<4>{15000, {input::Type::Neutral, input::Type::Neutral, input::Type::Pressed, input::Type::Pressed}},
 };
 
 input::SimulatedInput input_provider(simulated_buttons);
@@ -51,7 +51,7 @@ void setup() {
     machine.add<SelectRatio>();
     machine.add<Dispensing>();
     machine.add<Leaving>();
-    machine.add<Fault>();
+    machine.add<Cancelled>();
 
     delay(1000);
 
@@ -62,8 +62,15 @@ void setup() {
 
 void loop() {
     const unsigned long now = millis();
-    if (input_provider.poll(now))
-        machine.input(input_provider.button(), now);
+
+    const auto focus = notifications.process(now);
+
+    if (input_provider.poll(now)) {
+        if (focus)
+            notifications.close();
+        else
+            machine.input(input_provider.get(), now);
+    }
 
     u8g2.clearBuffer();
 

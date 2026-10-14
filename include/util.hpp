@@ -16,15 +16,17 @@
 // end debug
 
 #define OZ_TO_ML 29.57353F
-#define MOTOR_PINS 4
 
 // flow rate in ml/min
 #define FLOW_RATE 408.0F
 
 namespace constants {
 
+constexpr unsigned int motor_pins = 4;
+constexpr unsigned int button_pins = 4;
+
 // button pins
-constexpr std::array<uint8_t, 4> pins_btn{
+constexpr std::array<uint8_t, button_pins> pins_btn{
     32,
     33,
     25,
@@ -32,7 +34,7 @@ constexpr std::array<uint8_t, 4> pins_btn{
 };
 
 // motor controller pins
-constexpr std::array<uint8_t, MOTOR_PINS> pins_motor{
+constexpr std::array<uint8_t, motor_pins> pins_motor{
     27, // IN1
     18, // IN2
     19, // IN3
@@ -46,9 +48,10 @@ constexpr int pin_I2C_scl = 22;
 // button debounce time
 constexpr unsigned long debounce_delay = 20;
 
-constexpr unsigned long timeout = 20000; // time (ms) until giving up and returning to sleep
-constexpr unsigned long sleep_timeout = 80000; // time (ms) until turning off screen to save power
-constexpr unsigned long leaving_timeout = 5000; // time (ms) "thank you" scene is displayed
+constexpr unsigned long timeout = 20000;          // time (ms) until giving up and returning to sleep
+constexpr unsigned long sleep_timeout = 80000;    // time (ms) until turning off screen to save power
+constexpr unsigned long leaving_timeout = 5000;   // time (ms) "thank you" scene is displayed
+constexpr unsigned long cancelled_timeout = 5000; // time (ms) to stay in the cancelled state
 
 // amount (ml) to dispense, maps selection index to oz
 constexpr std::array<double, 3> dispense_amount{

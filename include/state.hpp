@@ -1,6 +1,8 @@
 #pragma once
 
 #include "scheduler.hpp"
+#include "input.hpp"
+#include "util.hpp"
 
 template <typename E, typename Context>
 class StateMachine;
@@ -12,7 +14,7 @@ public:
     virtual bool on_exit(StateMachine<E, Context>& machine, unsigned long now) {
         return true;
     };
-    virtual void on_input(StateMachine<E, Context>& machine, unsigned int input, unsigned long now) = 0;
+    virtual void on_input(StateMachine<E, Context>& machine, const std::array<input::Type, constants::button_pins>& pressed, unsigned long now) = 0;
     virtual void on_update(StateMachine<E, Context>& machine, unsigned long now) { };
 };
 
@@ -24,6 +26,12 @@ public:
 
 template <typename E, typename Context>
 class StateMachine {
+public:
+    Context context;
+    Scheduler scheduler;
+protected:
+    IStateHandler<E, Context>* m_handlers[static_cast<size_t>(E::Count)]; // you must append the enum Count to the end of the list in order to get the length
+    E m_current;
 public:
     StateMachine(Context& context) : context(context) { };
 
@@ -48,7 +56,7 @@ public:
         m_handlers[static_cast<size_t>(state)]->on_enter(*this, now);
     }
 
-    void input(unsigned pressed, unsigned long now) {
+    void input(const std::array<input::Type, constants::button_pins>& pressed, unsigned long now) {
         m_handlers[static_cast<size_t>(m_current)]->on_input(*this, pressed, now);
     }
 
@@ -56,10 +64,4 @@ public:
         m_handlers[static_cast<size_t>(m_current)]->on_update(*this, now);
         scheduler.process(now);
     }
-
-    Context context;
-    Scheduler scheduler;
-protected:
-    IStateHandler<E, Context>* m_handlers[static_cast<size_t>(E::Count)]; // you must append the enum Count to the end of the list in order to get the length
-    E m_current;
 };
