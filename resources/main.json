@@ -29,7 +29,9 @@
     "cup_size_2": "./resources/assets/cup_size_2.bmp",
     "ratio_0": "./resources/assets/ratio_0.bmp",
     "ratio_1": "./resources/assets/ratio_1.bmp",
-    "ratio_2": "./resources/assets/ratio_2.bmp"
+    "ratio_2": "./resources/assets/ratio_2.bmp",
+    "letter_S": "./resources/assets/S.bmp",
+    "letter_W": "./resources/assets/W.bmp"
   },
   "scenes": {
     "home_scene": [

@@ -43,7 +43,7 @@ constexpr std::array<uint8_t, motor_pins> pins_motor{
 
 // I2C pins for ESP32
 constexpr int pin_I2C_sda = 21;
-constexpr int pin_I2C_scl = 22;
+constexpr int pin_I2C_scl = 22; // or sck
 
 // button debounce time
 constexpr unsigned long debounce_delay = 20;

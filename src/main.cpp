@@ -1,11 +1,12 @@
 #include <Wire.h>
 
+#include "status.hpp"
 #include "toast.hpp"
 #include "util.hpp"
 #include "lotus.hpp"
 #include "input.hpp"
 
-#define SIMULATE_INPUT
+// #define SIMULATE_INPUT
 
 /*
  * https://github.com/olikraus/u8g2/wiki/u8g2setupcpp#constructor-name
@@ -18,9 +19,18 @@
 U8G2_SH1106_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0, U8X8_PIN_NONE);
 NotificationManager notifications(u8g2);
 
+
 Context context{u8g2, notifications};
 
 Machine machine(context);
+
+unsigned int water_level = 100;
+
+WaterFillStatus water_status{};
+SyrupFillStatus syrup_status{};
+StatusManager state(water_status, syrup_status);
+
+
 
 #ifdef SIMULATE_INPUT
 constexpr std::array simulated_buttons{
@@ -65,6 +75,7 @@ void loop() {
 
     const auto focus = notifications.process(now);
 
+    //state.draw(u8g2, 0);
     if (input_provider.poll(now)) {
         if (focus)
             notifications.close();
@@ -74,8 +85,9 @@ void loop() {
 
     u8g2.clearBuffer();
 
-    machine.update(now);
-    notifications.process(now);
+    //machine.update(now);
+    //notifications.process(now);
+
 
     u8g2.sendBuffer();
 
