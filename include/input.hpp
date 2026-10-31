@@ -1,61 +1,157 @@
 #pragma once
 
-#include "esp32-hal-gpio.h"
 #include "util.hpp"
 #include "scheduler.hpp"
+#include "logging.hpp"
+
+#include <string_view>
+
+namespace input {
+
+enum class Type : uint8_t {
+    Neutral,
+    Pressed,
+    Stale
+};
+
+constexpr std::string_view to_string(Type type) {
+    switch (type) {
+    case Type::Neutral: return "Neutral";
+    case Type::Pressed: return "Pressed";
+    case Type::Stale:   return "Stale";
+    default:            return "Unkown";
+    }
+}
 
 template <size_t N>
-class ButtonSource {
+int button(const std::array<Type, N> pressed) {
+    for (size_t i = 0; i < N; i++)
+        if (pressed[i] == Type::Pressed)
+            return i;
+    return -1;
+}
+
+template <size_t N, bool High = false>
+class ButtonInput {
+private:
+    const std::array<uint8_t, N>& m_pins;
+    std::array<Type, N> m_pressed{};
 public:
-    constexpr ButtonSource(const uint8_t (&pins)[N]) : pins(pins) { }
+    constexpr ButtonInput(const std::array<uint8_t, N>& pins)
+    : m_pins(pins)
+    { }
 
     void setup() {
-        setModes<INPUT>(pins);
+        lotus::set_modes<INPUT>(m_pins);
+        LOG_INFO("button_input", "button input initialized!");
     }
 
-    int poll() {
+    bool poll(unsigned long now) {
         int read[N];
         for (size_t i = 0; i < N; ++i)
-            read[i] = digitalRead(pins[i]);
+            read[i] = digitalRead(m_pins[i]);
 
-        int pressed = -1;
+        bool event = false;
 
-        // TODO add raw input option
-        for (size_t i = 0; i < N; i++)
-            if (!read[i])
-                pressed = i;
+        for (size_t i = 0; i < N; i++) {
+            if (read[i] == High) { // pcb buttons are active low!
+                if(m_pressed[i] == Type::Pressed)
+                    m_pressed[i] = Type::Stale;
+                else if (m_pressed[i] == Type::Neutral) {
+                    m_pressed[i] = Type::Pressed;
+                    event = true;
+                }
+            } else if (m_pressed[i] != Type::Neutral)
+                m_pressed[i] = Type::Neutral;
+        }
 
-        return pressed;
+        return event;
     }
-private:
-    const uint8_t (&pins)[N];
+
+    int button() {
+        return button(m_pressed);
+    }
+
+    const std::array<Type, N>& get() const {
+        return m_pressed;
+    }
 };
 
-class SimulatedSource {
+template<size_t N>
+struct Event {
+    unsigned int time;
+    std::array<Type, N> buttons;
+
+    std::string to_string() const {
+        std::string result = "";
+        for (size_t i = 0; i < N; ++i) {
+            result += input::to_string(buttons[i]);
+            if (i + 1 < N)
+                result += ", ";
+        }
+        return result;
+    }
+};
+
+template <size_t N>
+class SimulatedInput {
+private:
+    Scheduler m_scheduler;
+    std::array<Type, N> m_pressed{};
+    bool m_stale = false;
+    logging::Logger m_logger{"simulted_input"};
 public:
-    struct InputEvent {
-        unsigned int time;
-        unsigned int button;
-    };
-
-    template <size_t N>
-    SimulatedSource(const SimulatedSource::InputEvent (&inputs)[N]) {
-        for (size_t i = 0; i < N; i++) scheduler.schedule(inputs[i].time, [this, inputs, i](){ this->press(inputs[i].button); });
+    using Event = struct input::Event<N>;
+public:
+    template <size_t E>
+    explicit SimulatedInput(const std::array<Event, E>& inputs) {
+        for (size_t i = 0; i < E; i++)
+            m_scheduler.schedule(
+                inputs[i].time,
+                [this, inputs, i](unsigned long) {
+                    LOG_INFO(m_logger, "simulated input event fired [%s]", inputs[i].to_string().c_str());
+                    this->press(inputs[i].buttons);
+                }
+            );
     }
 
-    void setup() { }
-
-    int poll() {
-        scheduler.process();
-        auto button = pressed;
-        if (pressed != -1) pressed = -1;
-        return button;
+    void setup() {
+        LOG_INFO(m_logger, "simulated input initialized!");
     }
-private:
-    Scheduler scheduler;
-    int pressed = -1;
 
-    void press(unsigned int button) {
-        pressed = button;
+    bool poll(unsigned long now) {
+        m_scheduler.process(now);
+        if (m_stale)
+            return false;
+        m_stale = true;
+        return true;
+    }
+
+    void press(const std::array<Type, N>& buttons) {
+        m_pressed = buttons;
+        m_stale = false;
+    }
+
+    int button() const {
+        return button(m_pressed);
+    }
+
+    const std::array<Type, N>& get() const {
+        return m_pressed;
     }
 };
+
+template <size_t N>
+constexpr std::array<Type, N> button_pressed(size_t index) {
+    std::array<Type, N> buttons{};
+
+    if (index < N)
+        buttons[index] = Type::Pressed;
+
+    return buttons;
+}
+
+template <size_t N, size_t E>
+SimulatedInput(const std::array<Event<N>, E>&) -> SimulatedInput<N>;
+
+} // namespace input

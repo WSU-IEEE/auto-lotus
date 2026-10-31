@@ -1,25 +1,25 @@
 # Auto-Lotus
 
-Embedded code for the WSU IEEE Auto-Lotus project: a dispenser that mixes a Lotus Energy drink for you! Built for an ESP32S with an SH1106 128x64 monochrome, OLED display, and with two peristaltic pumps. Utilizes the [U8glib library](https://github.com/olikraus/u8g2/).
+Embedded code for the WSU IEEE Auto-Lotus project: a dispenser that mixes a Lotus Energy drink for you! Built for a custom ESP32-WROOM-32E-N4 with an SH1106 128x64 OLED display, and peristaltic pumps. Utilizes the [U8glib library](https://github.com/olikraus/u8g2/).
 
 ### Components
 
-- NODEMCU ESP-32S Microcontroller
 - Kamoer KPHM400-SW3B25 Perisaltic Pump
-- L298N Motor Driver
 - 1.3" SH1106 I2C Monochrome OLED Display
+- Bespoke PCB with Motor Drivers
+- Bespoke 4-Button Interface
 
 ### Flags and Debug
 
-In `main.cpp` there is a un/commented `#define` called `SIMULATE_INPUT`, defining this macro will enable the simulated input source defined further into the file. You can change the input using the provided array of `InputEvent`s. The first number represents the global time (ms) at which the input is simulated and the second number is the input to be simulated. Each button has a corresponding index: the leftmost button is 0, the one to the right of it is 1, and so on.
+In `main.cpp` there is a un/commented `#define` called `SIMULATE_INPUT`, defining this macro will enable the simulated input source instead of physical buttons. You can change the scheduled inputs using the provided array of `InputEvent`s. The first argument represents the global time (ms) at which the input event is fired and the second argument is an array of inputs to be simulated. The helper function `std::array<input::Type, N> input::button_pressed<size_t N>)(size_t index)` allows you to quickly simulate a press for a single button, by index where the leftmost button is 0 and the rightmost is 3;
 ```c++
-constexpr SimulatedSource::InputEvent simulated_buttons[] = {
-    {5000, 0},
-    {16000, 0}
+constexpr std::array simulated_buttons{
+    input::Event<4>{10000, input::button_pressed<4>(0)},
+    input::Event<4>{15000, {input::Type::Neutral, input::Type::Neutral, input::Type::Pressed, input::Type::Pressed}},
 };
 ```
 
-Defined in `/include/util.hpp` are some flags and debu options.
+Defined in `/include/util.hpp` are some flags and debug options.
 
 #### Flags
 
@@ -31,7 +31,7 @@ Defined in `/include/util.hpp` are some flags and debu options.
 
 ### JSON Schema
 
-There are two sections in the schema: `assets` and `scenes`.
+There are three sections in the schema: `assets`, `scenes`, `toasts`.
 The `assets` section is made up of key-value pairs for the name or ID of the asset and either an ordered list of path strings or a singular path string to a monochrome bitmap. The `scenes` section is defined with a scene ID and list of elements.
 
 There are 3 basic element Types (`asset`, `text`, and `rectangle`) and the `custom` element type. Here is an example scene with all 4 types and a static and animated asset.
@@ -84,6 +84,8 @@ This example exposes all options for each type, explanations of what the color/m
 
 Custom elements do not expose options outside of C++, the name corresponds to the `#define` of a constructor in the `/include/custom.hpp` header.
 
+The `toasts` section defines notification toasts that may be displayed to the user. It's definition has two fields: `icon` and `label`. The `icon` field matches the options of the `asset` type and `label` matches the `text` type.
+
 ### Tools
 
 - `/tools/generate_graphics.py` will read a JSON file in the above schema and generate a C++ header file with assets represented as bytes and scenes constructed as specified.
@@ -102,8 +104,8 @@ services.udev.packages = with pkgs; [
 ```
 Using `nix develop` or `direnv allow` to enter the development environment and python venv, the `pio` command corresponds to a FHS environment that will run `pio` from the `platformio-core` package. To enter the dev shell ensure you use `nix develop`, this adds the `up` alias and `upload` function.
 
-- `upload` will execute the `/tools/upload.sh` script and accepts a single argument pointing to the filename (without extension) of the JSON file to use.
-- `up` will call `upload` with the argument `complex` generating assets from `/resources/complex.json`, building, and uploading to the ESP32.
+- `upload` will execute the `/tools/upload.sh` script and accepts a single argument pointing to the filename (without extension) of the JSON file to use. Append the flag `-m` to upload and then monitor.
+- `up` will call `upload` with the argument `complex` generating assets from `/resources/complex.json`, building, and uploading to the ESP32. Append the flag `-m` to upload and then monitor. 
 
 ### IDE
 

@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+
 file="ratio"
 for i in {0..2}
 do

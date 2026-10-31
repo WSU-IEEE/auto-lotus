@@ -43,9 +43,13 @@
                         ln -sf ${clangd}/bin/clangd $PWD/.dev-clangd
                         export PLATFORMIO_CORE_DIR="$PWD/.platformio"
                         export PYTHONPATH="$PWD:$PYTHONPATH"
-                        alias up="$PWD/tools/upload.sh complex"
+                        up() {
+                            $PWD/tools/upload.sh main || return $?
+                            [[ "$1" == "-m" ]] && pio device monitor
+                        }
                         upload() {
-                            $PWD/tools/upload.sh $1
+                            $PWD/tools/upload.sh $1 || return $?
+                            [[ "$2" == "-m" ]] && pio device monitor
                         }
                     '';
                     packages = (with pkgs; [

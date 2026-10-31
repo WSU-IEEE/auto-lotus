@@ -1,67 +1,80 @@
 #pragma once
 
 #include "scheduler.hpp"
+#include "input.hpp"
+#include "util.hpp"
 
-template <typename TEnum>
+namespace state {
+
+template <typename E, typename Context>
 class StateMachine;
 
-template <typename TEnum>
+template <typename E, typename Context>
 class IStateHandler {
 public:
-    virtual void onEnter(StateMachine<TEnum>& machine) = 0;
-    virtual bool onExit(StateMachine<TEnum>& machine) {
+    virtual void on_enter(StateMachine<E, Context>& machine, unsigned long now) = 0;
+    virtual bool on_exit(StateMachine<E, Context>& machine, unsigned long now) {
         return true;
     };
-    virtual void onInput(StateMachine<TEnum>& machine, unsigned int input) = 0;
-    virtual void onUpdate(StateMachine<TEnum>& machine) { };
+    virtual void on_input(StateMachine<E, Context>& machine, const std::array<input::Type, lotus::constants::button_pins>& pressed, unsigned long now) = 0;
+    virtual void on_update(StateMachine<E, Context>& machine, unsigned long now) { };
 };
 
-template <typename TEnum, TEnum TState>
-class StateHandler : public IStateHandler<TEnum> {
+template <typename E, E State, typename Context>
+class StateHandler : public IStateHandler<E, Context> {
 public:
-    static constexpr TEnum state = TState;
+    static constexpr E state = State;
 };
 
-template <typename TEnum>
+template <typename E, typename Context>
 class StateMachine {
 public:
-    StateMachine(U8G2& display) : display(display) { };
+    Context context;
+    Scheduler scheduler;
+protected:
+    IStateHandler<E, Context>* m_handlers[static_cast<size_t>(E::Count)]; // you must append the enum Count to the end of the list in order to get the length
+    E m_current;
+    bool initial = true;
+public:
+    StateMachine(Context& context) : context(context) { };
 
-    template <typename THandler>
-    THandler& getHandler() {
-        static THandler handler;
+    template <typename H>
+    H& get_handler() {
+        static H handler;
         return handler;
     }
 
-    template <typename THandler>
+    template <typename H>
     void add() {
-        constexpr TEnum state = THandler::state;
-        handlers[static_cast<size_t>(state)] = &getHandler<THandler>();
+        constexpr E state = H::state;
+        m_handlers[static_cast<size_t>(state)] = &get_handler<H>();
     }
 
-    void transition(TEnum state) {
-        auto cancelled = !handlers[static_cast<size_t>(current)]->onExit(*this);
-        if (cancelled) return;
-        time = millis();
-        current = state;
-        scheduler.reset();
-        handlers[static_cast<size_t>(state)]->onEnter(*this);
-        Serial.println("transitioned");
+    void transition(E state, unsigned long now) {
+        if (initial)
+            initial = false;
+        else {
+            auto cancelled = !m_handlers[static_cast<size_t>(m_current)]->on_exit(*this, now);
+            if (cancelled)
+                return;
+        }
+        m_current = state;
+        scheduler.reset(now);
+        m_handlers[static_cast<size_t>(state)]->on_enter(*this, now);
     }
 
-    void input(unsigned pressed) {
-        handlers[static_cast<size_t>(current)]->onInput(*this, pressed);
+    void input(const std::array<input::Type, lotus::constants::button_pins>& pressed, unsigned long now) {
+        if (initial)
+            return;
+        m_handlers[static_cast<size_t>(m_current)]->on_input(*this, pressed, now);
     }
 
-    void update() {
-        handlers[static_cast<size_t>(current)]->onUpdate(*this);
-        scheduler.process();
+    void update(unsigned long now) {
+        if (initial)
+            return;
+        m_handlers[static_cast<size_t>(m_current)]->on_update(*this, now);
+        scheduler.process(now);
     }
-
-    U8G2& display;
-    Scheduler scheduler;
-protected:
-    IStateHandler<TEnum>* handlers[static_cast<size_t>(TEnum::Count)]; // you must append the enum Count to the end of the list in order to get the length
-    TEnum current;
-    unsigned long time = 0;
 };
+
+} // namespace state
