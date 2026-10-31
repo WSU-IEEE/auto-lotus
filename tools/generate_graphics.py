@@ -111,7 +111,7 @@ def write_sprite_bytes(out: TextIO, image: Image.Image, indent: int):
 
 def write_static_sprite(out: TextIO, name: str, path: str):
     with Image.open(path) as image:
-        _ = out.write(f"constexpr Sprite<{image.width}, {image.height}, 1> {name} PROGMEM = {{\n")
+        _ = out.write(f"constexpr scene::Sprite<{image.width}, {image.height}, 1> {name} PROGMEM = {{\n")
         write_sprite_bytes(out, image, 4)
         _ = out.write("\n};\n\n")
         asset_map[name] = StaticSprite(image.width, image.height)
@@ -119,7 +119,7 @@ def write_static_sprite(out: TextIO, name: str, path: str):
 
 def write_animated_sprite(out: TextIO, name: str, paths: list[str]):
     images = [Image.open(path) for path in paths]
-    _ = out.write(f"constexpr Sprite<{images[0].width}, {images[0].height}, {len(images)}> {name} PROGMEM = {{\n")
+    _ = out.write(f"constexpr scene::Sprite<{images[0].width}, {images[0].height}, {len(images)}> {name} PROGMEM = {{\n")
 
     for i, image in enumerate(images):
         write_sprite_bytes(out, image, 4);
@@ -151,13 +151,13 @@ def element_expression(element: ElementType) -> str:
             assert name in asset_map, f"asset {name} not defined in asset map!"
             bitmap_mode: int = element.get("bitmap_mode", 0)
             if isinstance(asset_map[name], AnimatedSprite):
-                return cpp_constructor("element::AnimatedSprite", f"graphics::{name}.view()", bitmap_mode, element.get("time", 300), element.get("offset", 0), x, y, draw_color)
+                return cpp_constructor("scene::element::AnimatedSprite", f"graphics::{name}.view()", bitmap_mode, element.get("time", 300), element.get("offset", 0), x, y, draw_color)
             else:
-                return cpp_constructor("element::StaticSprite", f"graphics::{name}.view()", bitmap_mode, x, y, draw_color)
+                return cpp_constructor("scene::element::StaticSprite", f"graphics::{name}.view()", bitmap_mode, x, y, draw_color)
         case "text":
-            return cpp_constructor("element::Text", element.get("font", "u8g2_font_t0_14_mf"), f"\"{element["text"]}\"", element.get("font_mode", 0), x, y, draw_color)
+            return cpp_constructor("scene::element::Text", element.get("font", "u8g2_font_t0_14_mf"), f"\"{element["text"]}\"", element.get("font_mode", 0), x, y, draw_color)
         case "rectangle":
-            return cpp_constructor("element::Rectangle", element["width"], element["height"], "true" if element.get("filled", True) else "false", x, y, draw_color)
+            return cpp_constructor("scene::element::Rectangle", element["width"], element["height"], "true" if element.get("filled", True) else "false", x, y, draw_color)
         case _:
             assert_never(element["type"])
 
@@ -169,7 +169,7 @@ def write_element(out: TextIO, element: ElementType, indent: int):
 
 
 def write_complex_scene(out: TextIO, name: str, elements: Elements):
-    _ = out.write(f"inline Scene {name}{{\n")
+    _ = out.write(f"inline scene::Scene {name}{{\n")
     for i, element in enumerate(elements):
         write_element(out, element, 4)
         if i + 1 < len(elements):
@@ -178,7 +178,7 @@ def write_complex_scene(out: TextIO, name: str, elements: Elements):
 
 
 def write_simple_scene(out: TextIO, name: str):
-    _ = out.write(f"constexpr Scene {name}_scene{{\n")
+    _ = out.write(f"constexpr scene::Scene {name}_scene{{\n")
 
     element: Asset = {
         "type": "asset",
@@ -219,7 +219,7 @@ def write_toast_component(out: TextIO, element: ToastComponent, indent: int):
 
 
 def write_toast(out: TextIO, name: str, toast: Toast):
-    _ = out.write(f"inline Toast {name}(\n")
+    _ = out.write(f"inline notification::Toast {name}(\n")
     write_toast_component(out, toast["icon"], 4)
     _ = out.write(",\n")
     write_toast_component(out, toast["label"], 4)

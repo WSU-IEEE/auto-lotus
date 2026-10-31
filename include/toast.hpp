@@ -5,11 +5,13 @@
 #include <string>
 #include <U8g2lib.h>
 
+namespace notification {
+
 struct Toast {
     static constexpr size_t label_size = 24;
 
     struct Icon {
-        SpriteView sprite{};
+        scene::SpriteView sprite{};
         uint8_t draw_color = 1;
         uint8_t bitmap_mode = 1;
         uint8_t time = static_cast<uint8_t>(300);
@@ -121,3 +123,5 @@ private:
         m_showing = false;
     }
 };
+
+} // notification namespace

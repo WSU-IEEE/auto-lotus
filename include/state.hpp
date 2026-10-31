@@ -4,6 +4,8 @@
 #include "input.hpp"
 #include "util.hpp"
 
+namespace state {
+
 template <typename E, typename Context>
 class StateMachine;
 
@@ -14,7 +16,7 @@ public:
     virtual bool on_exit(StateMachine<E, Context>& machine, unsigned long now) {
         return true;
     };
-    virtual void on_input(StateMachine<E, Context>& machine, const std::array<input::Type, constants::button_pins>& pressed, unsigned long now) = 0;
+    virtual void on_input(StateMachine<E, Context>& machine, const std::array<input::Type, lotus::constants::button_pins>& pressed, unsigned long now) = 0;
     virtual void on_update(StateMachine<E, Context>& machine, unsigned long now) { };
 };
 
@@ -32,6 +34,7 @@ public:
 protected:
     IStateHandler<E, Context>* m_handlers[static_cast<size_t>(E::Count)]; // you must append the enum Count to the end of the list in order to get the length
     E m_current;
+    bool initial = true;
 public:
     StateMachine(Context& context) : context(context) { };
 
@@ -48,20 +51,30 @@ public:
     }
 
     void transition(E state, unsigned long now) {
-        auto cancelled = !m_handlers[static_cast<size_t>(m_current)]->on_exit(*this, now);
-        if (cancelled)
-            return;
+        if (initial)
+            initial = false;
+        else {
+            auto cancelled = !m_handlers[static_cast<size_t>(m_current)]->on_exit(*this, now);
+            if (cancelled)
+                return;
+        }
         m_current = state;
         scheduler.reset(now);
         m_handlers[static_cast<size_t>(state)]->on_enter(*this, now);
     }
 
-    void input(const std::array<input::Type, constants::button_pins>& pressed, unsigned long now) {
+    void input(const std::array<input::Type, lotus::constants::button_pins>& pressed, unsigned long now) {
+        if (initial)
+            return;
         m_handlers[static_cast<size_t>(m_current)]->on_input(*this, pressed, now);
     }
 
     void update(unsigned long now) {
+        if (initial)
+            return;
         m_handlers[static_cast<size_t>(m_current)]->on_update(*this, now);
         scheduler.process(now);
     }
 };
+
+} // namespace state

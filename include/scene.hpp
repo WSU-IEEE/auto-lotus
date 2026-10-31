@@ -5,6 +5,8 @@
 
 #define BYTE_SIZE 8
 
+namespace scene {
+
 struct SpriteView {
     const uint8_t* frames = nullptr;
     u8g2_uint_t width = 0, height = 0;
@@ -133,11 +135,21 @@ public:
     T& get() {
         return std::get<T>(elements);
     }
+
+    template <typename T>
+    const T& get() const {
+        return std::get<T>(elements);
+    }
 private:
     std::tuple<E...> elements;
 
     template <size_t... I>
     void iterate(U8G2& u8g2, unsigned long now, std::index_sequence<I...>) const {
-        (std::get<I>(elements).draw(u8g2, now), ...);
+        (
+            std::get<I>(elements).draw(u8g2, now),
+            ...
+        );
     }
 };
+
+} // namespace scene

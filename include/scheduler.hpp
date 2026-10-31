@@ -7,11 +7,11 @@ class Scheduler {
 public:
     const static constexpr inline auto event_queue_size = 10U;
 
-    using Callback = std::function<void()>;
+    using Callback = std::function<void(unsigned long)>;
 
     struct Event {
         unsigned long time;
-        std::function<void()> callback;
+        Callback callback;
     };
 protected:
     std::array<Event, event_queue_size> m_queue{};
@@ -42,7 +42,7 @@ public:
             auto callback = std::move(m_queue[0].callback);
             std::move(m_queue.begin() + 1, m_queue.begin() + m_count, m_queue.begin());
             --m_count;
-            callback();
+            callback(now);
         };
     }
 };

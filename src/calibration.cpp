@@ -1,15 +1,14 @@
 // alternative build target to calibrate constants on real hardware
 #include <Wire.h>
+#include "util.hpp"
 
 #include "esp32-hal-gpio.h"
 #include "util.hpp"
 #include "scheduler.hpp"
 #include "input.hpp"
 
-#define RESET_MOTORS set_motors<0, 4>({LOW, LOW, LOW, LOW});
-
 #define MOTOR_START 10000LU
-#define MOTOR_END   15000LU
+#define MOTOR_END   105005U
 
 constexpr auto time_start = 10000LU;
 constexpr auto time_end =  time_start + 5000LU;
@@ -21,25 +20,30 @@ Scheduler scheduler;
 volatile bool start = false;
 volatile bool end = false;
 
-input::ButtonInput input_provider(constants::pins_btn);
+input::ButtonInput input_provider(lotus::constants::pins_btn);
 
+template <size_t M>
 void enable_motor() {
-    // OUT3 and OUT4 are swapped on motor driver board so for motor two, REVERSE and FORWARD are flipped, i.e. LOW, HIGH should start REVERSE but instead it does forward, it is inverted here to counter that
-    set_motors<0, 4>({LOW, HIGH, HIGH, LOW});
+    lotus::set_motors<M, 1>({HIGH});
+}
+
+void disable_motor() {
+    lotus::set_motors<0, 3>({LOW, LOW, LOW});
 }
 
 void setup() {
     Serial.begin(115200); // baud rate
-    Wire.begin(constants::pin_I2C_sda, constants::pin_I2C_scl);
+    Wire.begin(lotus::constants::pin_I2C_sda, lotus::constants::pin_I2C_scl);
     u8g2.begin();
     u8g2.setFontPosTop();
     u8g2.setFontMode(1);
     u8g2.setFont(u8g2_font_9x15_tf);
 
-    // outputs to control the L298N motor driver (assuming IN1, IN2 for motor 1 and IN3, IN4 for motor 2)
-    set_modes<OUTPUT>(constants::pins_motor);
+    // outputs to control the L298N motor driver
+    lotus::set_modes<OUTPUT>(lotus::constants::pins_motor);
     input_provider.setup();
 
+    /*
     scheduler.schedule(
         MOTOR_START,
         []() {
@@ -49,19 +53,20 @@ void setup() {
     scheduler.schedule(
         MOTOR_END,
         []() {
-            RESET_MOTORS
+            disable_motor();
         }
     );
+    */
 
     scheduler.schedule(
         time_start,
-        []() {
+        [](unsigned long) {
             start = true;
         }
     );
     scheduler.schedule(
         time_end,
-        []() {
+        [](unsigned long) {
             end = true;
         }
     );
@@ -93,7 +98,7 @@ void loop() {
     auto pressed = input_provider.get();
     for (size_t i = 0; i < 4; ++i) {
         Serial.print(pressed[i] == input::Type::Neutral ? "NEUTRAL" : pressed[i] == input::Type::Pressed ? "PRESSED" : "STALE");
-        Serial.printf("(%d), ", digitalRead(constants::pins_btn[i]));
+        Serial.printf("(%d), ", digitalRead(lotus::constants::pins_btn[i]));
         if (pressed[i] == input::Type::Pressed)
             u8g2.drawBox(32 + i * 10, 50, 8, 8);
         else if (pressed[i] == input::Type::Stale) {
@@ -103,6 +108,13 @@ void loop() {
             u8g2.drawFrame(32 + i * 10, 50, 8, 8);
     }
     Serial.print("\n");
+
+    if (pressed[0] == input::Type::Pressed && pressed[2] != input::Type::Pressed)
+        enable_motor<0>();
+    else if (pressed[1] == input::Type::Pressed && pressed[2] != input::Type::Pressed)
+        enable_motor<1>();
+    else if (pressed[2] == input::Type::Pressed && pressed[0] != input::Type::Pressed)
+        disable_motor();
 
     u8g2.sendBuffer();
 

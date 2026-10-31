@@ -2,12 +2,26 @@
 
 #include "util.hpp"
 #include "scheduler.hpp"
+#include "logging.hpp"
+
+#include <string_view>
 
 namespace input {
 
 enum class Type : uint8_t {
-    Neutral, Pressed, Stale
+    Neutral,
+    Pressed,
+    Stale
 };
+
+constexpr std::string_view to_string(Type type) {
+    switch (type) {
+    case Type::Neutral: return "Neutral";
+    case Type::Pressed: return "Pressed";
+    case Type::Stale:   return "Stale";
+    default:            return "Unkown";
+    }
+}
 
 template <size_t N>
 int button(const std::array<Type, N> pressed) {
@@ -17,7 +31,7 @@ int button(const std::array<Type, N> pressed) {
     return -1;
 }
 
-template <size_t N>
+template <size_t N, bool High = false>
 class ButtonInput {
 private:
     const std::array<uint8_t, N>& m_pins;
@@ -28,7 +42,8 @@ public:
     { }
 
     void setup() {
-        set_modes<INPUT>(m_pins);
+        lotus::set_modes<INPUT>(m_pins);
+        LOG_INFO("button_input", "button input initialized!");
     }
 
     bool poll(unsigned long now) {
@@ -39,7 +54,7 @@ public:
         bool event = false;
 
         for (size_t i = 0; i < N; i++) {
-            if (read[i]) {
+            if (read[i] == High) { // pcb buttons are active low!
                 if(m_pressed[i] == Type::Pressed)
                     m_pressed[i] = Type::Stale;
                 else if (m_pressed[i] == Type::Neutral) {
@@ -66,6 +81,16 @@ template<size_t N>
 struct Event {
     unsigned int time;
     std::array<Type, N> buttons;
+
+    std::string to_string() const {
+        std::string result = "";
+        for (size_t i = 0; i < N; ++i) {
+            result += input::to_string(buttons[i]);
+            if (i + 1 < N)
+                result += ", ";
+        }
+        return result;
+    }
 };
 
 template <size_t N>
@@ -74,6 +99,7 @@ private:
     Scheduler m_scheduler;
     std::array<Type, N> m_pressed{};
     bool m_stale = false;
+    logging::Logger m_logger{"simulted_input"};
 public:
     using Event = struct input::Event<N>;
 public:
@@ -82,13 +108,16 @@ public:
         for (size_t i = 0; i < E; i++)
             m_scheduler.schedule(
                 inputs[i].time,
-                [this, inputs, i]() {
+                [this, inputs, i](unsigned long) {
+                    LOG_INFO(m_logger, "simulated input event fired [%s]", inputs[i].to_string().c_str());
                     this->press(inputs[i].buttons);
                 }
             );
     }
 
-    void setup() { }
+    void setup() {
+        LOG_INFO(m_logger, "simulated input initialized!");
+    }
 
     bool poll(unsigned long now) {
         m_scheduler.process(now);
